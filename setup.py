@@ -45,7 +45,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
         'Operating System :: OS Independent',
-        # 'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
@@ -56,7 +56,7 @@ setup(
     install_requires=[
         'numpy',
     ],
-    # license="MIT license",
+    license="MIT license",
     long_description=get_long_description() + '\n\n' + get_changelog(),
     long_description_content_type='text/markdown',
     keywords='abaqus, fea, materials-science',
