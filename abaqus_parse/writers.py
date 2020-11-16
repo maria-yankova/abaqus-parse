@@ -132,24 +132,33 @@ def write_inp(path, geometry, sections, materials, steps):
     ]
     for k, v in steps.items():
         if k != 'initial-step':
+            
             stps.append(
                 '*Step, name=' + v['name'] + ', nlgeom=YES\n' +\
                 '*' + v['type'] + '\n' + format_arr(list(np.array(list(v['time increments']))[None].T), format_spec=['{:3.2f}', '{:3.1f}','{:2.1e}', '{:3.2f}'],
                                                    col_delim=', ')
             )
         for bc in v['bcs']:
+                # print(list(np.array((bc['dof']))[None].T))
                 stps.append(
                     '*Boundary\n' + bc['node set'] +', ')
                 if 'dof' in bc.keys():
-                    stps.append(format_arr(np.array(list(bc['dof'])), format_spec=['{:d}'],
-                                    col_delim=', '))
+                    if len(bc['dof'])==2:
+                        stps.append(format_arr(np.array(bc['dof']), format_spec=['{:d}'], col_delim=', ') )
+                    else:
+                        stps.append(str(bc['dof'][0]) + ', ' + str(bc['dof'][1])+ ', ' + str(bc['dof'][2]) + '\n') #list(np.array((bc['dof']))[None].T)
+                        # (format_arr(list(np.array(i) for i in bc['dof']), format_spec=['{:d}','{:d}', '{:3.1f}'], col_delim=', ') 
                 elif 'type' in bc.keys():
                     stps.append(bc['type'] + '\n')
         if 'output' in v.keys():
             stps.append(
                 '*Restart, write, frequency=' + str(v['output']['restart frequency']) +'\n'
             )
+            stps.append(
+                        '*Output, field\n*Node Output\nCOORD, U\n*Element Output, position=centroidal, elset=specimen\nE, EVOL, PE, PEEQ, S, COORD\n'
+                    )
             for ko, vo in v['output'].items():
+                
                 if ko=='history':
                     stps.append(
                         '*Output, history, frequency=' + str(vo['frequency']) + '\n'
@@ -163,8 +172,12 @@ def write_inp(path, geometry, sections, materials, steps):
                                 stps.append(', crack tip nodes')
                                 if crack['symmetry']:
                                     stps.append(', symm')
-                                print(format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
-                                stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                                stps.append('\n')
+                                if any(isinstance(el, list) for el in crack['crack tip nodes']):
+                                    for cr in crack['crack tip nodes']:
+                                         stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                                else:
+                                    stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
                             
         if k != 'initial-step':       
             stps.append('*End Step\n')
