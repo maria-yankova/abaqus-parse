@@ -117,7 +117,7 @@ def cells_from_nodes(nodes_array):
 
 
 def make_donut_mesh(rin, elem_side = 0.025, an=3,
-                     sbox_width_mult_rad = 5, ret_rin_nodes=False):
+                     sbox_width_mult_rad = 5):
     """
     
     Parameters
@@ -179,7 +179,6 @@ def make_donut_mesh(rin, elem_side = 0.025, an=3,
     don_reshaped[:,-1,:] = end_ray_coords.T
     don_nodes_flattened = don_reshaped.reshape(rn*an, 2)
     don_node_labs = np.arange(1, an * rn + 1).reshape(rn, an)
-    print('don_node_labs: ', don_node_labs[:,0])
     don_node_labs_flattened = don_node_labs.flatten()
     
     
@@ -197,14 +196,10 @@ def make_donut_mesh(rin, elem_side = 0.025, an=3,
     don_cell_labs = np.arange(1, (an-1) * (rn-1) + 1).reshape(an-1, rn-1)
     don_cell_labs_flattened = don_cell_labs.flatten()
 
-    if ret_rin_nodes:
-        return (don_nodes_flattened, don_node_labs_flattened,
-            don_cells_flattened, don_cell_centres_flattened, don_cell_labs_flattened, don_node_labs[:,0])    
-    else:
-        return (don_nodes_flattened, don_node_labs_flattened,
+    return (don_nodes_flattened, don_node_labs_flattened,
             don_cells_flattened, don_cell_centres_flattened, don_cell_labs_flattened)
 
-def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, sbox_width_mult_rad=5, ret_crack_line=True):
+def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  sbox_width_mult_rad=5, ret_crack_line=True, size_behind_crack=0.25):
     """
     Build refined mesh = 4 rectilinear + 1 donut mesh at crack tip
     ''''''''''''''''''''''''''''''''''''''
@@ -219,6 +214,10 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
     ''''''''''''''''' '  '               '
                       ''''''''''''''''''''
     
+    Parameters
+    ----------
+    size_behind_crack : float
+        Size of the mesh behind the crack as fraction of ref_mesh_side.
     
     """
     rad_mm = rin * 1e-3
@@ -237,13 +236,7 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
     ref_mesh_cell_labs_all = []
     
     # donut mesh nodes and cells
-    if ret_crack_line:
-        don_nodes_flattened, don_node_labs_flattened,\
-    don_cells, don_cell_centres_flattened, don_cell_labs_flattened, crack_line =\
-    make_donut_mesh(rin, elem_side=elem_side, an=an, 
-                    sbox_width_mult_rad=sbox_width_mult_rad, ret_rin_nodes=True)
-    else:
-        don_nodes_flattened, don_node_labs_flattened,\
+    don_nodes_flattened, don_node_labs_flattened,\
     don_cells, don_cell_centres_flattened, don_cell_labs_flattened =\
     make_donut_mesh(rin, elem_side=elem_side, an=an, 
                     sbox_width_mult_rad=sbox_width_mult_rad)
@@ -253,6 +246,9 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
            ( don_nodes_flattened.reshape(rn, an, 2))[0][-1][0],
             (don_nodes_flattened.reshape(rn, an, 2))[0][-1][0]
     ]
+    if ret_crack_line:
+        crack_line = don_node_labs_flattened.reshape(rn, an)[:,0]
+        crack_front = don_node_labs_flattened.reshape(rn, an)[0]
     
     ref_mesh_nodes_all.append(don_nodes_flattened)
     ref_mesh_labs_all.append(don_node_labs_flattened)
@@ -265,15 +261,15 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
         [don_mesh_size[0], 0],
         [don_mesh_size[0], don_mesh_size[1]],
         [0, don_mesh_size[1]],
-        [-ref_mesh_size[0] / 2, don_mesh_size[1]],
-        [-ref_mesh_size[0] / 2, 0],
+        [-ref_mesh_size[0] * size_behind_crack, don_mesh_size[1]],
+        [-ref_mesh_size[0] * size_behind_crack, 0],
     ]
     rect_mesh_sizes = [
         [ref_mesh_size[0] / 2 - don_mesh_size[0], don_mesh_size[1]],
         [ref_mesh_size[0] / 2 - don_mesh_size[0], ref_mesh_size[1] - don_mesh_size[1]],
         [don_mesh_size[0], ref_mesh_size[1] - don_mesh_size[1]],
-        [ref_mesh_size[0] / 2, ref_mesh_size[1] - don_mesh_size[1]],
-        [ref_mesh_size[0] / 2, don_mesh_size[1] - rad_mm]
+        [ref_mesh_size[0] * size_behind_crack, ref_mesh_size[1] - don_mesh_size[1]],
+        [ref_mesh_size[0] * size_behind_crack, don_mesh_size[1] - rad_mm]
     ]
 
     for i in range(5):
@@ -285,7 +281,7 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
         h = np.linspace(0, mesh_size[1], mesh_grid[1])
 
         if i == 4:
-            h = list(don_nodes_flattened.reshape(rn, an, 2)[-1, :, 1])  # DONT have this
+            h = list(don_nodes_flattened.reshape(rn, an, 2)[-1, :, 1])  # DON'T have this
             mesh_grid[1] = len(h)
         meshw, meshh = np.meshgrid(w, h)
 
@@ -332,7 +328,13 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
         node_labs[new_node_idx] = np.arange(ref_mesh_labs_all[-1][-1]+1,
                                             ref_mesh_labs_all[-1][-1]+1 + len(meshw.compressed()))
         node_labs_grid = node_labs.reshape(meshw.shape)
-        
+        if i==0:
+            # print('node_labs_grid[0,1:]: ', node_labs_grid[0,1:])
+            crack_front = np.concatenate((crack_front, node_labs_grid[0,1:]))
+            # print('front: ', front)
+        elif i==4:
+            crack_lip = node_labs_grid[0,:-1]
+            # print('crack_lip: ', crack_lip)
         ref_mesh_nodes_all.append(nodes_coord_masked)
         ref_mesh_labs_all.append(node_labs[new_node_idx])
 
@@ -350,9 +352,14 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4, s
         ref_mesh_cells_all.append(cells.astype('int'))
         ref_mesh_cell_centres_all.append(cell_centres_flattened)
         ref_mesh_cell_labs_all.append(cell_labs)
+    crack_nodes = {
+        'crack_lip': crack_lip.astype('int'),
+        'crack_line': crack_line.astype('int'),
+        'crack_front': crack_front.astype('int'),
+    }
     if ret_crack_line:
         return ref_mesh_nodes_all, ref_mesh_labs_all,\
-            ref_mesh_cells_all, ref_mesh_cell_centres_all, ref_mesh_cell_labs_all, crack_line
+            ref_mesh_cells_all, ref_mesh_cell_centres_all, ref_mesh_cell_labs_all, crack_nodes
     else:    
         return ref_mesh_nodes_all, ref_mesh_labs_all,\
             ref_mesh_cells_all, ref_mesh_cell_centres_all, ref_mesh_cell_labs_all
@@ -382,12 +389,13 @@ def find_border(nodes, node_labels, condition):
     return nodes[nodes_bord_idx], node_labels[nodes_bord_idx]
 
 
-def expand_mesh(coords, coord_labs, expand_dir, max_node_label, max_elem_label, exp_modes=['transition'],
-                num_layers=[1], corner_beg=False, corner_end=False, end_dir=None, 
-                width=1, width_mult=1.5):
+def expand_mesh(coords, coord_labs, expand_dir, max_node_label, max_elem_label, exp_modes=['transition'], num_layers=[1], corner_beg=False, corner_end=False, end_dir=None, width=1, width_mult=1.5):
     """
     Parameters
     ----------
+    coords : (N, 2)
+    coord_labs : (N,)
+    
     width : float
         Width of a single layer [length].
     
