@@ -2,113 +2,123 @@ import numpy as np
 from abaqus_parse.utils import format_arr 
 __all__ = []
 
-def write_inp(path, geometry, sections, materials, steps):
+def write_inp(path, materials, parts, steps, assembly=None):
     """
     Write the input file '.inp' for an Abaqus simulation.
     
     Parameters
     ----------
-    
+    path : string
+        Path for writing the input file.
+    parts : dicts of dicts
+        The nodes, elements, sets and any other definitions for each part.
+    assembly : list of dicts
+        Definitions of the part instances that the assembly consists of (optional).
+    steps: dict of dicts (to be changed to list of dicts)
+        Definitions of the steps of the loading history.
     
     Returns
     -------
-    
+    An Abaqus .inp file.
     """
-    # ********** GEOMETRY **********
-    nodes, node_labs, elems, elem_labs, elem_type, elem_sets, node_sets = geometry.values()
-    
-    sep = '\n'
+    # ********** PARTS **********
 
-    nodes = [
-        '**\n',
-        '**Nodes\n',
-        '**\n',
-        '*Node\n',
-        format_arr([node_labs[None].T, nodes],
-                            format_spec=['{:d}', '{:12.7f}'],
-                            col_delim=', ')  
-    ]
-    
-    elems = [
-        '**\n',
-        '**Elements\n',
-        '**\n',
-        '*Element, type=' + elem_type + '\n',
-        format_arr([elem_labs[None].T, elems],
-                            format_spec=['{:d}', '{:d}'],
-                            col_delim=', ')
-    ]
-    
-    n_sets = [
-        '**\n',
-        '**Node sets\n',
-        '**\n',
-    ]
-    for k, v in node_sets.items():
-        if k=='load-line':
-            print(v, type(v))
-        if type(v) == tuple:
-            n_sets.append(
-                '*Nset, nset=' + k + ', generate\n' +\
-                str(v[0]) + ', ' + str(v[1]) + ', 1\n' 
-                          )
-        elif type(v)==list or type(v)==np.ndarray:
-            if type(v)==list:
-                v = np.array(v)
-            whole_rows = v.size // 16
-            first_block = v[:(whole_rows * 16)].reshape(-1, 16)
-            remaining_block = v[(whole_rows * 16):]
-            n_sets.append('*Nset, nset=' + k + '\n' +\
-                        format_arr(first_block, format_spec=['{:d}'],
-                                col_delim=', ') +\
-                        format_arr(remaining_block, format_spec=['{:d}'],
-                                col_delim=', '))
-        elif type(v)==np.int32:
-            n_sets.append('*Nset, nset=' + k + '\n' + str(v) + '\n') 
-    el_sets = [
-        '**\n',
-        '**Element sets\n',
-        '**\n',
-    ]
-    for k, v in elem_sets.items():
-        if type(v) == tuple:
-            el_sets.append(
-                '*Elset, elset=' + k + ', generate\n' +\
-                str(v[0]) + ', ' + str(v[1]) + ', 1\n' 
-                          )
-        elif type(v)==list or type(v)==np.ndarray:
-            whole_rows = v.size // 16
-            first_block = v[:(whole_rows * 16)].reshape(-1, 16)
-            remaining_block = v[(whole_rows * 16):]
-            n_sets.append('*Elset, elset=' + k + '\n' +\
-                        format_arr(first_block, format_spec=['{:d}'],
-                                col_delim=', ') +\
-                        format_arr(remaining_block, format_spec=['{:d}'],
-                                col_delim=', '))
+    for part, part_definition in parts.items():
+        nodes, node_labs, elems, elem_labs, elem_type, elem_sets, node_sets, sections = part_definition.values()
+        # print()
+        # print('nodes: ', nodes)
+        sep = '\n'
 
+        nodes = [
+            '**\n',
+            '**Nodes\n',
+            '**\n',
+            '*Node\n',
+            format_arr([node_labs[None].T, nodes],
+                                format_spec=['{:d}', '{:12.7f}'],
+                                col_delim=', ')  
+        ]
         
+        elems = [
+            '**\n',
+            '**Elements\n',
+            '**\n',
+            '*Element, type=' + elem_type + '\n',
+            format_arr([elem_labs[None].T, elems],
+                                format_spec=['{:d}', '{:d}'],
+                                col_delim=', ')
+        ]
+        
+        n_sets = [
+            '**\n',
+            '**Node sets\n',
+            '**\n',
+        ]
+        for k, v in node_sets.items():
+            if k=='load-line':
+                print(v, type(v))
+            if type(v) == tuple:
+                n_sets.append(
+                    '*Nset, nset=' + k + ', generate\n' +\
+                    str(v[0]) + ', ' + str(v[1]) + ', 1\n' 
+                            )
+            elif type(v)==list or type(v)==np.ndarray:
+                if type(v)==list:
+                    v = np.array(v)
+                whole_rows = v.size // 16
+                first_block = v[:(whole_rows * 16)].reshape(-1, 16)
+                remaining_block = v[(whole_rows * 16):]
+                n_sets.append('*Nset, nset=' + k + '\n' +\
+                            format_arr(first_block, format_spec=['{:d}'],
+                                    col_delim=', ') +\
+                            format_arr(remaining_block, format_spec=['{:d}'],
+                                    col_delim=', '))
+            elif type(v)==np.int32:
+                n_sets.append('*Nset, nset=' + k + '\n' + str(v) + '\n') 
+        el_sets = [
+            '**\n',
+            '**Element sets\n',
+            '**\n',
+        ]
+        for k, v in elem_sets.items():
+            if type(v) == tuple:
+                el_sets.append(
+                    '*Elset, elset=' + k + ', generate\n' +\
+                    str(v[0]) + ', ' + str(v[1]) + ', 1\n' 
+                            )
+            elif type(v)==list or type(v)==np.ndarray:
+                whole_rows = v.size // 16
+                first_block = v[:(whole_rows * 16)].reshape(-1, 16)
+                remaining_block = v[(whole_rows * 16):]
+                n_sets.append('*Elset, elset=' + k + '\n' +\
+                            format_arr(first_block, format_spec=['{:d}'],
+                                    col_delim=', ') +\
+                            format_arr(remaining_block, format_spec=['{:d}'],
+                                    col_delim=', '))
+
             
-    geom = sep.join([
-        ''.join(nodes),
-        ''.join(elems),
-        ''.join(el_sets),
-    ])
-    
-    # ********** SECTIONS & MATERIALS **********
-    # Sections
-    sects = [
-        '**\n',
-        '**Sections\n',
-        '**\n',
-    ]
-    for sect in sections:     
-        sects.append(
-            '*' + sect['type'] + ' Section, elset=' + sect['elset']  +\
-            ', material=' + sect['material'] + '\n'
-        )
-    sects = sep.join([
-        ''.join(sects),
-    ])
+                
+        geom = sep.join([
+            ''.join(nodes),
+            ''.join(elems),
+            ''.join(el_sets),
+        ])
+        
+        # Sections
+        sects = [
+            '**\n',
+            '**Sections\n',
+            '**\n',
+        ]
+        for sect in sections:     
+            sects.append(
+                '*' + sect['type'] + ' Section, elset=' + sect['elset']  +\
+                ', material=' + sect['material'] + '\n'
+            )
+        sects = sep.join([
+            ''.join(sects),
+        ])
+     # ********** MATERIALS **********
     mats = [
         '**\n',
         '**Materials\n',
@@ -163,33 +173,24 @@ def write_inp(path, geometry, sections, materials, steps):
                     stps.append(
                         '*Output, history, frequency=' + str(vo['frequency']) + '\n'
                     )
-                    if 'cracks' in vo.keys():
-                        for crack in vo['cracks']:
-                            stps.append(
-                                '*Contour Integral, crack name=' + str(crack['name']) + ', contours=' + str(crack['contours'])
-                            )
-                            if 'crack tip nodes' in crack.keys():
-                                stps.append(', crack tip nodes')
-                                if crack['symmetry']:
-                                    stps.append(', symm')
-                                stps.append('\n')
-                                if any(isinstance(el, list) for el in crack['crack tip nodes']):
-                                    for cr in crack['crack tip nodes']:
-                                         stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
-                                else:
-                                    stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                    # if 'cracks' in vo.keys():
+                    #     for crack in vo['cracks']:
+                    #         stps.append(
+                    #             '*Contour Integral, crack name=' + str(crack['name']) + ', contours=' + str(crack['contours'])
+                    #         )
+                    #         if 'crack tip nodes' in crack.keys():
+                    #             stps.append(', crack tip nodes')
+                    #             if crack['symmetry']:
+                    #                 stps.append(', symm')
+                    #             stps.append('\n')
+                    #             if any(isinstance(el, list) for el in crack['crack tip nodes']):
+                    #                 for cr in crack['crack tip nodes']:
+                    #                      stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                    #             else:
+                    #                 stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
                             
         if k != 'initial-step':       
             stps.append('*End Step\n')
-
-#     all_docs = ''.join([
-#         ''.join(nodes),
-#         ''.join(elems),
-#         ''.join(el_sets),
-#         ''.join(sects),
-#         ''.join(mats),
-#         ''.join(stps),
-#     ])
     
     with open(path, 'w') as of:   # to do: test if i need universal newline mode here
 
