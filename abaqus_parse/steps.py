@@ -1,4 +1,11 @@
-def generate_compact_tension_specimen_steps(applied_displacement, number_contours):
+def generate_compact_tension_specimen_steps(applied_displacement, number_contours, time_increment_definition):
+
+    time_increment_def = (
+        time_increment_definition['initial_time_increment'],
+        time_increment_definition['total_step_time'],
+        time_increment_definition['min_time_increment_allowed'],
+        time_increment_definition['max_time_increment_allowed'],
+    )
     steps = {
         'initial-step': {
             'bcs': [
@@ -23,7 +30,7 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         'load-step-1': {
             'name': 'Step-1',
             'type': 'Static',
-            'time increments': (0.02, 1.0, 1e-08, 0.02),
+            'time_increment_definition': time_increment_def, #(0.02, 1.0, 1e-08, 0.02),
             'bcs':[{
                 'node set': 'load-line',
                 'dof': (2, 2, applied_displacement)
