@@ -11,7 +11,8 @@ def write_inp(path, materials, parts, steps, assembly=None):
     ----------
     path : string
         Path for writing the input file.
-    parts : dicts of dicts
+    materials : 
+    parts : dict of dicts
         The nodes, elements, sets and any other definitions for each part.
     assembly : list of dicts
         Definitions of the part instances that the assembly consists of (optional).
@@ -24,14 +25,24 @@ def write_inp(path, materials, parts, steps, assembly=None):
 
     TODO:
     - Add preprint options as input parameters. Currently, hard coded.
+    - User specified Field Output. Currently, hard coded.
 
     """
     # ********** PARTS **********
 
     for part, part_definition in parts.items():
-        nodes, node_labs, elems, elem_labs, elem_type, elem_sets, node_sets, sections = part_definition.values()
+
+        node_coordinates = part_definition['node_coordinates']
+        node_labels = part_definition['node_labels']
+        elem_nodes = part_definition['element_nodes']
+        elem_labs = part_definition['element_labels']
+        elem_type = part_definition['element_type']
+        elem_sets = part_definition['elsets']
+        node_sets = part_definition['nsets']
+        sections = part_definition['sections']
+        
         # print()
-        # print('nodes: ', nodes)
+        # print('node_coordinates: ', node_coordinates)
         sep = '\n'
 
         nodes = [
@@ -39,7 +50,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
             '**Nodes\n',
             '**\n',
             '*Node\n',
-            format_arr([node_labs[None].T, nodes],
+            format_arr([node_labels[None].T, node_coordinates],
                                 format_spec=['{:d}', '{:12.7f}'],
                                 col_delim=', ')  
         ]
@@ -49,7 +60,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
             '**Elements\n',
             '**\n',
             '*Element, type=' + elem_type + '\n',
-            format_arr([elem_labs[None].T, elems],
+            format_arr([elem_labs[None].T, elem_nodes],
                                 format_spec=['{:d}', '{:d}'],
                                 col_delim=', ')
         ]
@@ -100,14 +111,6 @@ def write_inp(path, materials, parts, steps, assembly=None):
                                     col_delim=', ') +\
                             format_arr(remaining_block, format_spec=['{:d}'],
                                     col_delim=', '))
-
-            
-                
-        geom = sep.join([
-            ''.join(nodes),
-            ''.join(elems),
-            ''.join(el_sets),
-        ])
         
         # Sections
         sects = [
@@ -115,7 +118,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
             '**Sections\n',
             '**\n',
         ]
-        for sect in sections:     
+        for sect in sections:   
             sects.append(
                 '*' + sect['type'] + ' Section, elset=' + sect['elset']  +\
                 ', material=' + sect['material'] + '\n'
@@ -133,6 +136,10 @@ def write_inp(path, materials, parts, steps, assembly=None):
         mats.append(
             '*Material, name=' + k + '\n')
         for sk, ss in v.items():
+            if sk == 'Elastic':
+                ss = [[ss['youngs_modulus'], ss['poisson_ratio']]]
+            if sk == 'Plastic':
+                ss = ss['stress_strain']
             mats.append(
                 '*' + sk + '\n' +\
                 format_arr(np.array(ss), format_spec=['{:12.7f}'],

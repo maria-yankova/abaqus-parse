@@ -19,13 +19,7 @@ def generate_material_models(materials_list):
 
         else:
             if 'elastic' in material:
-                mat_mod_i['Elastic'] = [
-                    [
-                        material['elastic']['youngs_modulus'],
-                        material['elastic']['poisson_ratio'],
-                    ]
-                ]
-
+                mat_mod_i['Elastic'] = material['elastic']
 
         material_models[material['name']] = mat_mod_i
 
