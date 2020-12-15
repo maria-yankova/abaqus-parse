@@ -11,14 +11,57 @@ def write_inp(path, materials, parts, steps, assembly=None):
     ----------
     path : string
         Path for writing the input file.
-    materials : 
+    materials : dict of dicts
+         Dict whose keys are the material names and whose values are dicts with the following keys:
+            elastic : dict, optional
+                Dict with keys:
+                    youngs_modulus : float
+                    poisson_ratio : float
+            func_name : dict, optional, a function that generates a dictionary with the material properties, e.g. 
+                elastic :  dict
+                    Dict with keys:
+                        youngs_modulus : float
+                        poisson_ratio : float
+                plastic : dict
+                    stress_strain : ndarray of shape (R, 2)
+            **func_kwargs, optional, input arguments for func_name, e.g. temperature.
     parts : dict of dicts
-        The nodes, elements, sets and any other definitions for each part.
+        Dict whose keys are the part names and whose values are dicts with the following keys:
+            node_coordinates : ndarray of shape (M, N) for M nodes with N coordinates
+            node_labels : ndarray of shape (M,) for M node labels
+            element_nodes : ndarray of shape (L, K) for L elements with K nodes each
+            element_labels : ndarray of shape (L,) for L label nodes
+            nsets : dict
+                Dict keys are the node set names and values are one of:
+                    - range of nodes specified as a tuple (start, stop, [step]), OR
+                    - ndarray of shape (P,) for P nodes, OR
+                    - integer for a single node
+            elsets : dict
+                Dict keys are the element set names and values are one of:
+                    - range of elements specified as a tuple (start, stop, [step]), OR
+                    - ndarray of shape (Q,) for Q elements, OR
+                    - integer for a single element
+            sections : list of dicts
+                Each dictionary has the following keys and values:
+                    type : str
+                        The type of section, e.g. 'Solid'.
+                    material : str
+                        The name of the material of the section.
+                    elset : str
+                        The name of the element set part of the section. 
     assembly : list of dicts
-        Definitions of the part instances that the assembly consists of (optional).
+        Definitions of the part instances that the assembly consists of (optional) (TODO).
     steps: dict of dicts (to be changed to list of dicts)
-        Definitions of the steps of the loading history.
-    
+        Dict whose keys are the step names and whose values are dicts with the following keys:
+        'initial-step' : dict, compulsory
+            Dictionary with a key 'bcs' and value a list of dictionaries with the following keys and values:
+                node set : str 
+                    The node set name
+                dof : tuple, optional 
+                    Degrees of freedom to be included into the boundary condition
+                type : str, optional
+                    Type of boundary condition, e.g. 'XSYMM' OR 'PINNED'.
+  
     Returns
     -------
     An Abaqus .inp file.
@@ -155,7 +198,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
             
             stps.append(
                 '*Step, name=' + v['name'] + ', nlgeom=YES\n' +\
-                '*' + v['type'] + '\n' + format_arr(list(np.array(list(v['time increments']))[None].T), format_spec=['{:3.2f}', '{:3.1f}','{:2.1e}', '{:3.2f}'],
+                '*' + v['type'] + '\n' + format_arr(list(np.array(list(v['time_increment_definition']))[None].T), format_spec=['{:3.2f}', '{:3.1f}','{:2.1e}', '{:3.2f}'],
                                                    col_delim=', ')
             )
         for bc in v['bcs']:
