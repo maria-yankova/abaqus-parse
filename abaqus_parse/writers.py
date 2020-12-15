@@ -51,17 +51,40 @@ def write_inp(path, materials, parts, steps, assembly=None):
                         The name of the element set part of the section. 
     assembly : list of dicts
         Definitions of the part instances that the assembly consists of (optional) (TODO).
-    steps: dict of dicts (to be changed to list of dicts)
-        Dict whose keys are the step names and whose values are dicts with the following keys:
-        'initial-step' : dict, compulsory
-            Dictionary with a key 'bcs' and value a list of dictionaries with the following keys and values:
-                node set : str 
-                    The node set name
-                dof : tuple, optional 
-                    Degrees of freedom to be included into the boundary condition
-                type : str, optional
-                    Type of boundary condition, e.g. 'XSYMM' OR 'PINNED'.
-  
+    steps: dict of dicts 
+        Dict whose keys are the step names and whose values are dicts with the following keys. The first step name must be 'initial-step'.
+            initial-step : dict 
+                Dict with keys:
+                    bcs : list of dict
+                        List of boundary condition dicts, each with keys:
+                            node set : str 
+                                The node set name
+                            dof : tuple, optional 
+                                Degrees of freedom to be included into the boundary condition
+                            type : str, optional
+                                Type of boundary condition, e.g. 'XSYMM' OR 'PINNED'.
+            analysis_step_name : dict
+                Dict representing arbitrary step with keys:
+                    name : str
+                    type : str
+                    time_increment_definition : tuple 
+                        Representing (initial_time_increment, total_step_time, min_time_increment_allowed, max_time_increment_allowed)
+                    bcs : list of dict
+                        List of boundary condition dicts, each with keys:
+                            node set : str 
+                                The node set name
+                            dof : tuple, optional 
+                                Degrees of freedom to be included into the boundary condition
+                    output : dict of dicts 
+                        history : dict
+                            frequency : int, optional
+                            cracks : list of dicts, optional
+                        field : list of dicts
+                            output type : str, node | element
+                            position : str, optional, e.g. 'centroidal'
+                            set name : str, optional
+                            variables : list of str, e.g. ['COORD', 'U']
+                      
     Returns
     -------
     An Abaqus .inp file.
@@ -69,6 +92,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
     TODO:
     - Add preprint options as input parameters. Currently, hard coded.
     - User specified Field Output. Currently, hard coded.
+    - Change steps to to list of dicts
 
     """
     # ********** PARTS **********
@@ -208,20 +232,37 @@ def write_inp(path, materials, parts, steps, assembly=None):
                     if len(bc['dof'])==2:
                         stps.append(format_arr(np.array(bc['dof']), format_spec=['{:d}'], col_delim=', ') )
                     else:
-                        stps.append(str(bc['dof'][0]) + ', ' + str(bc['dof'][1])+ ', ' + str(bc['dof'][2]) + '\n') #list(np.array((bc['dof']))[None].T)
-                        # (format_arr(list(np.array(i) for i in bc['dof']), format_spec=['{:d}','{:d}', '{:3.1f}'], col_delim=', ') 
+                        stps.append(str(bc['dof'][0]) + ', ' + str(bc['dof'][1])+ ', ' + str(bc['dof'][2]) + '\n')
                 elif 'type' in bc.keys():
                     stps.append(bc['type'] + '\n')
         if 'output' in v.keys():
-            stps.append(
-                '*Restart, write, frequency=' + str(v['output']['restart frequency']) +'\n'
-            )
-            stps.append(
-                        '*Output, field\n*Node Output\nCOORD, U\n*Element Output, position=centroidal, elset=specimen\nE, EVOL, PE, PEEQ, S, COORD\n'
-                    )
+            if 'restart frequency' in v['output'].keys():
+                stps.append(
+                    '*Restart, write, frequency=' + str(v['output']['restart frequency']) +'\n'
+                )
             for ko, vo in v['output'].items():
-                
-                if ko=='history':
+                if ko=='field':
+                    stps.append(
+                        '*Output, field\n'
+                    )
+                    for fo in vo:
+                        if fo['output type']=='node':
+                            stps.append('*Node Output')
+                            if 'set name' in fo.keys():
+                                stps.append(', nset='+fo['set'])
+                            if 'frequency' in fo.keys():
+                                stps.append(', frequency='+str(fo['frequency']))
+                            stps.append('\n' + ', '.join(fo['variables']) + '\n')
+                        if fo['output type']=='element':
+                            stps.append('*Element Output')
+                            if 'position' in fo.keys():
+                                stps.append(', position='+fo['position'])
+                            if 'set name' in fo.keys():
+                                stps.append(', elset='+fo['set'])
+                            if 'frequency' in fo.keys():
+                                stps.append(', frequency='+str(fo['frequency']))
+                            stps.append('\n'+ ', '.join(fo['variables']) + '\n')     
+                elif ko=='history':
                     stps.append(
                         '*Output, history, frequency=' + str(vo['frequency']) + '\n'
                     )
@@ -240,6 +281,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
                     #                      stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
                     #             else:
                     #                 stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+              
                             
         if k != 'initial-step':       
             stps.append('*End Step\n')

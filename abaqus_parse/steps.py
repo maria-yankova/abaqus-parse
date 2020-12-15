@@ -38,6 +38,19 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
             'output':
             {
                 'restart frequency': 0,
+                'field':[
+                    {
+                        'output type': 'node',
+                        'variables': ['COORD', 'U'],
+                    },
+                    {
+                        'output type': 'element',
+                        'position': 'centroidal',
+                        'elset': 'specimen',
+                        'frequency': 0,
+                        'variables': ['E', 'EVOL', 'PE', 'PEEQ', 'S', 'COORD'],
+                    }
+                ],
                 'history':
                 {
                     'frequency': 0,
@@ -52,7 +65,6 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
                         }
                     ]
                 },
-                'field':{},
             }
             
         }
