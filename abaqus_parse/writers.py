@@ -40,9 +40,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
         elem_sets = part_definition['elsets']
         node_sets = part_definition['nsets']
         sections = part_definition['sections']
-        
-        # print()
-        # print('node_coordinates: ', node_coordinates)
+
         sep = '\n'
 
         nodes = [
@@ -71,8 +69,6 @@ def write_inp(path, materials, parts, steps, assembly=None):
             '**\n',
         ]
         for k, v in node_sets.items():
-            if k=='load-line':
-                print(v, type(v))
             if type(v) == tuple:
                 n_sets.append(
                     '*Nset, nset=' + k + ', generate\n' +\
@@ -89,7 +85,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
                                     col_delim=', ') +\
                             format_arr(remaining_block, format_spec=['{:d}'],
                                     col_delim=', '))
-            elif type(v)==np.int32:
+            elif type(v)==np.int32 or type(v)==np.int64:
                 n_sets.append('*Nset, nset=' + k + '\n' + str(v) + '\n') 
         el_sets = [
             '**\n',
@@ -111,6 +107,8 @@ def write_inp(path, materials, parts, steps, assembly=None):
                                     col_delim=', ') +\
                             format_arr(remaining_block, format_spec=['{:d}'],
                                     col_delim=', '))
+            elif type(v)==np.int32 or type(v)==np.int64:
+                n_sets.append('*Elset, elset=' + k + '\n' + str(v) + '\n') 
         
         # Sections
         sects = [
@@ -161,7 +159,6 @@ def write_inp(path, materials, parts, steps, assembly=None):
                                                    col_delim=', ')
             )
         for bc in v['bcs']:
-                # print(list(np.array((bc['dof']))[None].T))
                 stps.append(
                     '*Boundary\n' + bc['node set'] +', ')
                 if 'dof' in bc.keys():
