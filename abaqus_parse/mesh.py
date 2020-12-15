@@ -1,6 +1,6 @@
 import numpy as np
 from more_itertools import pairwise
-from vecmaths import geometry
+from abaqus_parse import fracture, utils
 
 def donut_polar_grid_quad(inner_r, outer_r, num_rays, num_arcs, quad=1,     include_borders=True):
     """
@@ -77,7 +77,7 @@ def order_nodes_elem(elem_nodes_all, all_nodes, all_nodes_labs):
         node_coord_sorted = all_nodes[node_idx]
         # order nodes in correct order
         
-        node_ord = geometry.order_coplanar_points(
+        node_ord = utils.order_coplanar_points(
             np.hstack((node_coord_sorted, np.zeros((len(node_coord_sorted),1)))).T,
             np.array([[0,0,1]]).T
         )
@@ -116,18 +116,17 @@ def cells_from_nodes(nodes_array):
     return np.array(cells)
 
 
-def make_donut_mesh(rin, elem_side = 0.025, an=3,
-                     sbox_width_mult_rad = 5):
+def make_donut_mesh(crack_tip_radius_microns, fine_mesh_element_length=0.025, fan_box_num_side_elements=3, fan_box_width=5):
     """
     
     Parameters
     ----------
-    rin : float
+    crack_tip_radius_microns : float
         Inner radius in micrometers
     
-    an : integer
+    fan_box_num_side_elements : integer
      number of arcs (TO CALCULATE LATER) = 3 
-    sbox_width_mult_rad : integer
+    fan_box_width : integer
        aproximate width of fan mesh in multiples of r 
     ret_rin_nodes : bool
         Return the inner nodes compromising the inner radius in anti-clockwise direction. 
@@ -137,26 +136,26 @@ def make_donut_mesh(rin, elem_side = 0.025, an=3,
     
     
     """    
-    rad_mm = rin * 1e-3
+    rad_mm = crack_tip_radius_microns * 1e-3
     
     # width of fan mesh in multiples of elem side
-    fbox_side_mult_elem = int((sbox_width_mult_rad*rad_mm) / elem_side)
+    fbox_side_mult_elem = int((fan_box_width*rad_mm) / fine_mesh_element_length)
     fbox_side_mult_elem = round(fbox_side_mult_elem/3)*3
     
     # side size of fan mesh in mm
-    fbox_side_mm = fbox_side_mult_elem * elem_side
+    fbox_side_mm = fbox_side_mult_elem * fine_mesh_element_length
     
     # number of rays
     rn = 2 * fbox_side_mult_elem + 1
 
     thetaout, rout  = donut_polar_grid_quad(rad_mm, fbox_side_mm,
-                                            rn, an)
+                                            rn, fan_box_num_side_elements)
     
-    xout, yout = geometry.polar2cart_2D(rout, thetaout)
+    xout, yout = utils.polar2cart_2D(rout, thetaout)
     
     # Move nodes at ray ends to the sides of a square
     ##################################################
-    # coords from 0 to an of side square box in multiples of ctip radii
+    # coords from 0 to fan_box_num_side_elements of side square box in multiples of ctip radii
     # half coordinates of the end of fan rays crossing square
     end_ray_half_coords =  np.linspace(0, fbox_side_mm, int((rn-1)/2+1))
     # print('end_ray_half_coords: ', end_ray_half_coords)
@@ -175,12 +174,11 @@ def make_donut_mesh(rin, elem_side = 0.025, an=3,
     end_ray_coords[:, :flip_idx] = np.flip(end_ray_coords[:, :flip_idx], axis=0)
 
     # Array of nodes as (Rows, Cols, (x, y)_node)
-    don_reshaped = np.concatenate((xout[None].T, yout[None].T), axis=1).reshape(rn, an, 2)
+    don_reshaped = np.concatenate((xout[None].T, yout[None].T), axis=1).reshape(rn, fan_box_num_side_elements, 2)
     don_reshaped[:,-1,:] = end_ray_coords.T
-    don_nodes_flattened = don_reshaped.reshape(rn*an, 2)
-    don_node_labs = np.arange(1, an * rn + 1).reshape(rn, an)
+    don_nodes_flattened = don_reshaped.reshape(rn*fan_box_num_side_elements, 2)
+    don_node_labs = np.arange(1, fan_box_num_side_elements * rn + 1).reshape(rn, fan_box_num_side_elements)
     don_node_labs_flattened = don_node_labs.flatten()
-    
     
     don_cells = cells_from_nodes(don_node_labs)
     don_cells_flattened = don_cells.reshape(-1, 4)
@@ -191,15 +189,22 @@ def make_donut_mesh(rin, elem_side = 0.025, an=3,
     don_cell_centres = np.mean(
         cells_from_nodes(don_reshaped), axis=2
     )
-    don_cell_centres_flattened = don_cell_centres.reshape((an-1) * (rn-1), 2)
+    don_cell_centres_flattened = don_cell_centres.reshape((fan_box_num_side_elements-1) * (rn-1), 2)
 
-    don_cell_labs = np.arange(1, (an-1) * (rn-1) + 1).reshape(an-1, rn-1)
+    don_cell_labs = np.arange(1, (fan_box_num_side_elements-1) * (rn-1) + 1).reshape(fan_box_num_side_elements-1, rn-1)
     don_cell_labs_flattened = don_cell_labs.flatten()
 
-    return (don_nodes_flattened, don_node_labs_flattened,
-            don_cells_flattened, don_cell_centres_flattened, don_cell_labs_flattened)
+    out = {
+        'nodes_flattened': don_nodes_flattened,
+        'node_labels_flattened': don_node_labs_flattened,
+        'cells_flattened': don_cells_flattened,
+        'cell_centres_flattened': don_cell_centres_flattened,
+        'cell_labels_flattened': don_cell_labs_flattened,
+    }
 
-def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  sbox_width_mult_rad=5, ret_crack_line=True, size_behind_crack=0.25):
+    return out
+
+def make_fine_plus_donut_mesh(crack_tip_radius_microns, fine_mesh_length=0.2, fine_mesh_element_length = 0.025, fan_box_num_side_elements=4,  fan_box_width=5, ret_crack_definition=True, size_behind_crack=0.25):
     """
     Build refined mesh = 4 rectilinear + 1 donut mesh at crack tip
     ''''''''''''''''''''''''''''''''''''''
@@ -217,16 +222,16 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  
     Parameters
     ----------
     size_behind_crack : float
-        Size of the mesh behind the crack as fraction of ref_mesh_side.
+        Size of the mesh behind the crack as fraction of fine_mesh_length.
     
     """
-    rad_mm = rin * 1e-3
+    rad_mm = crack_tip_radius_microns * 1e-3
     # number of elements on side of fine mesh
-    num_elem_side = int(ref_mesh_side / elem_side)
+    num_elem_side = int(fine_mesh_length / fine_mesh_element_length)
     line_elem =  num_elem_side - 1 #  substract corner element
     line_elem = round(line_elem / 3) * 3
     num_elem_side = line_elem + 1
-    ref_mesh_size = [2 * num_elem_side * elem_side, num_elem_side * elem_side]
+    ref_mesh_size = [2 * num_elem_side * fine_mesh_element_length, num_elem_side * fine_mesh_element_length]
     
     #refined mesh nodes and cells
     ref_mesh_nodes_all = []
@@ -235,26 +240,27 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  
     ref_mesh_cell_centres_all = []
     ref_mesh_cell_labs_all = []
     
-    # donut mesh nodes and cells
-    don_nodes_flattened, don_node_labs_flattened,\
-    don_cells, don_cell_centres_flattened, don_cell_labs_flattened =\
-    make_donut_mesh(rin, elem_side=elem_side, an=an, 
-                    sbox_width_mult_rad=sbox_width_mult_rad)
+    # donut mesh nodes and cells    
+    donut_mesh = make_donut_mesh(
+        crack_tip_radius_microns,
+        fine_mesh_element_length=fine_mesh_element_length, fan_box_num_side_elements=fan_box_num_side_elements, 
+        fan_box_width=fan_box_width,
+    )
         
-    rn = int(don_nodes_flattened.shape[0] / an)
+    rn = int(donut_mesh['nodes_flattened'].shape[0] / fan_box_num_side_elements)
     don_mesh_size = [
-           ( don_nodes_flattened.reshape(rn, an, 2))[0][-1][0],
-            (don_nodes_flattened.reshape(rn, an, 2))[0][-1][0]
+            (donut_mesh['nodes_flattened'].reshape(rn, fan_box_num_side_elements, 2))[0][-1][0],
+            (donut_mesh['nodes_flattened'].reshape(rn, fan_box_num_side_elements, 2))[0][-1][0]
     ]
-    if ret_crack_line:
-        crack_line = don_node_labs_flattened.reshape(rn, an)[:,0]
-        crack_front = don_node_labs_flattened.reshape(rn, an)[0]
+    if ret_crack_definition:
+        crack_line = donut_mesh['node_labels_flattened'].reshape(rn, fan_box_num_side_elements)[:,0]
+        crack_front = donut_mesh['node_labels_flattened'].reshape(rn, fan_box_num_side_elements)[0]
     
-    ref_mesh_nodes_all.append(don_nodes_flattened)
-    ref_mesh_labs_all.append(don_node_labs_flattened)
-    ref_mesh_cells_all.append(don_cells)
-    ref_mesh_cell_centres_all.append(don_cell_centres_flattened)
-    ref_mesh_cell_labs_all.append(don_cell_labs_flattened)
+    ref_mesh_nodes_all.append(donut_mesh['nodes_flattened'])
+    ref_mesh_labs_all.append(donut_mesh['node_labels_flattened'])
+    ref_mesh_cells_all.append(donut_mesh['cells_flattened'])
+    ref_mesh_cell_centres_all.append(donut_mesh['cell_centres_flattened'])
+    ref_mesh_cell_labs_all.append(donut_mesh['cell_labels_flattened'])
 
 
     rect_mesh_shifts = [
@@ -274,14 +280,14 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  
 
     for i in range(5):
         mesh_size = rect_mesh_sizes[i]
-        mesh_grid = [int(mesh_size[0]/elem_side) + 1,
-                     int(mesh_size[1]/elem_side) + 1]
+        mesh_grid = [int(mesh_size[0]/fine_mesh_element_length) + 1,
+                     int(mesh_size[1]/fine_mesh_element_length) + 1]
 
         w = np.linspace(0, mesh_size[0], mesh_grid[0])  
         h = np.linspace(0, mesh_size[1], mesh_grid[1])
 
         if i == 4:
-            h = list(don_nodes_flattened.reshape(rn, an, 2)[-1, :, 1])  # DON'T have this
+            h = list(donut_mesh['nodes_flattened'].reshape(rn, fan_box_num_side_elements, 2)[-1, :, 1])  # DON'T have this
             mesh_grid[1] = len(h)
         meshw, meshh = np.meshgrid(w, h)
 
@@ -357,12 +363,18 @@ def make_fine_plus_donut_mesh(rin, ref_mesh_side=0.2, elem_side = 0.025, an=4,  
         'crack_line': crack_line.astype('int'),
         'crack_front': crack_front.astype('int'),
     }
-    if ret_crack_line:
-        return ref_mesh_nodes_all, ref_mesh_labs_all,\
-            ref_mesh_cells_all, ref_mesh_cell_centres_all, ref_mesh_cell_labs_all, crack_nodes
-    else:    
-        return ref_mesh_nodes_all, ref_mesh_labs_all,\
-            ref_mesh_cells_all, ref_mesh_cell_centres_all, ref_mesh_cell_labs_all
+
+    out = {
+        'node_coordinates': ref_mesh_nodes_all,
+        'node_labels': ref_mesh_labs_all,
+        'element_nodes': ref_mesh_cells_all,
+        'element_centre_coordinates': ref_mesh_cell_centres_all,
+        'element_labels': ref_mesh_cell_labs_all,
+    }
+    if ret_crack_definition:
+        out['crack_definition'] = crack_nodes
+
+    return out
 
 def find_border(nodes, node_labels, condition):
     """
@@ -661,3 +673,336 @@ def expand_mult_dirs(conds, expand_dirs, end_dirs, mesh_nodes_all,
         )
         
     return mesh_nodes_all, mesh_node_labs_all, mesh_elem_all.astype('int'), mesh_elem_labs_all.astype('int')
+
+
+def transition_mesh(refined_mesh_definition):
+    """
+    Expand a refined mesh in required directions through a transition mesh with increasing element size. The following joining mesh feature is used:
+     _____
+    |_|_|_|
+    | |_| |
+    |/___\|
+    
+    Parameters
+    ----------
+    
+    
+    
+    """
+
+    ref_mesh_nodes_all = refined_mesh_definition['node_coordinates']
+    ref_mesh_labs_all = refined_mesh_definition['node_labels']
+    ref_mesh_cells_all = refined_mesh_definition['element_nodes']
+    ref_mesh_cell_centres_all = refined_mesh_definition['element_centre_coordinates']
+    ref_mesh_cell_labs_all = refined_mesh_definition['element_labels']
+    crack_nodes = refined_mesh_definition['crack_definition']
+
+    ref_mesh_nodes_all_con = np.concatenate(ref_mesh_nodes_all)
+
+    conds = ['minx', 'maxy', 'maxx',]
+
+    min_x = np.min(ref_mesh_nodes_all_con[:,0])
+    max_x = np.max(ref_mesh_nodes_all_con[:,0])
+    max_y = np.max(ref_mesh_nodes_all_con[:,1])
+
+    # border idx of expansion directions
+    ref_mesh_bord_idx = [
+        np.where(ref_mesh_nodes_all_con[:,0]==min_x)[0],
+        np.where(ref_mesh_nodes_all_con[:,1]==max_y)[0],
+        np.where(ref_mesh_nodes_all_con[:,0]==max_x)[0],
+    ]
+
+    # expand directions (normal to border)
+    expand_dirs = [
+        np.array([-1, 0]),
+        np.array([0, 1]),
+        np.array([1, 0])
+    ]
+
+    # start-end direction (parallel to border)
+    end_dirs = [
+        np.array([0, 1]),
+        np.array([1, 0]),
+        np.array([0, 1])
+    ]
+    # corner end beginning and end modes
+    corner_end_modes = [True, True, True]
+    corner_beg_modes = [False, True, False]
+
+    # create copies of all mesh components as a start
+    mesh_nodes_all = ref_mesh_nodes_all.copy()
+    mesh_node_labs_all = ref_mesh_labs_all.copy()
+    mesh_elem_all = ref_mesh_cells_all.copy()
+    mesh_elem_labs_all = ref_mesh_cell_labs_all.copy()
+
+    # find max node and element labels to start
+    max_node_label = int(ref_mesh_labs_all[-1][-1])
+    max_elem_label = int(ref_mesh_cell_labs_all[-1][-1])
+
+    for i in range(len(conds)):    
+        bord_nodes, bord_labs = find_border(ref_mesh_nodes_all_con, 
+                                           np.concatenate(ref_mesh_labs_all), conds[i])    
+        sort_idx_x = np.lexsort((bord_nodes[:,1], bord_nodes[:,0],))
+        expand_dir = expand_dirs[i]
+        end_dir = end_dirs[i]
+
+        expmesh_nodes, expmesh_labels, elements_all, elements_all_labels = expand_mesh(bord_nodes[sort_idx_x], 
+                                                                                       bord_labs[sort_idx_x],
+                                                    expand_dir, max_node_label=max_node_label,
+                                                    max_elem_label=max_elem_label, 
+                                                    corner_end=corner_end_modes[i], corner_beg=corner_beg_modes[i], 
+                                                    end_dir=end_dir, width=0.1,
+                                                    exp_modes=['transition', 'uniform', 'transition', 'uniform', 
+                                                               'transition', 'uniform', ],
+                                                    num_layers=[1, 2, 1, 1, 1, 1], 
+                                                                                      )
+
+        max_node_label = expmesh_labels[-1]
+        max_elem_label = elements_all_labels[-1]
+        mesh_nodes_all.append(
+            expmesh_nodes
+        )
+        mesh_node_labs_all.append(
+            expmesh_labels
+        )
+        mesh_elem_all.append(elements_all)
+        mesh_elem_labs_all.append(elements_all_labels)
+
+    mesh_nodes_all = np.concatenate(mesh_nodes_all)
+    mesh_node_labs_all = np.concatenate(mesh_node_labs_all).astype('int')
+    mesh_elem_all = np.concatenate(mesh_elem_all)
+    mesh_elem_labs_all = np.concatenate(mesh_elem_labs_all)
+    
+    # REMOVE duplicates
+    # find unique node coordinates
+    mesh_nodes_all_uniq, index, counts = np.unique(
+        mesh_nodes_all, axis=0, 
+        return_index=True, 
+        return_counts=True
+    )
+
+    # labels of unique nodes
+    mesh_node_labs_all_uniq = mesh_node_labs_all[index]
+
+    # indices of removed nodes
+    rem_nodes_index = np.setdiff1d(np.arange(len(mesh_nodes_all)), index)
+    removed_nodes = mesh_nodes_all[rem_nodes_index]
+
+
+    mesh_elem_all_uniq = mesh_elem_all.copy()
+    if np.any(counts>2):
+        raise Warning('Label repeated more than twice.')
+    else:
+        for ni, rep_node in enumerate(mesh_nodes_all_uniq[counts==2]):
+
+            pl_idx_ni = np.nonzero((mesh_nodes_all_uniq==rep_node).all(axis=1))
+            rep_nodes_idx = np.nonzero((removed_nodes==rep_node).all(axis=1))
+            rep_nodes = removed_nodes[rep_nodes_idx][0]
+            rep_nodes_lab = mesh_node_labs_all[rem_nodes_index][rep_nodes_idx][0]
+            mesh_elem_all_uniq[np.where(mesh_elem_all==rep_nodes_lab)] = mesh_node_labs_all_uniq[pl_idx_ni]
+    
+    out = {
+        'node_coordinates': mesh_nodes_all_uniq,
+        'node_labels': mesh_node_labs_all_uniq,
+        'element_nodes': mesh_elem_all_uniq,
+        'element_labels': mesh_elem_labs_all,
+    }
+    
+    return out
+
+
+def compact_tension_specimen_mesh(refined_mesh_definition, dimensions, size_type, fraction):
+
+    transition_mesh_definition = transition_mesh(refined_mesh_definition)
+    crack_nodes = refined_mesh_definition['crack_definition']
+
+    nd = transition_mesh_definition['node_coordinates']
+    ndlab = transition_mesh_definition['node_labels']
+    el = transition_mesh_definition['element_nodes']
+    ellab = transition_mesh_definition['element_labels']
+    
+    specimen = fracture.standard_specimen(
+        size_type,
+        dimensions=dimensions,
+        fraction=fraction
+    )
+
+
+    tot_size_ref = (
+        np.max(nd[:,0]) - np.min(nd[:,0]),
+        np.max(nd[:,1]) - np.min(nd[:,1]),
+    )
+
+    exp_width = (specimen['A'] - tot_size_ref[0]) / 2
+    exp_height = (specimen['E'] - tot_size_ref[1])
+
+    num_lays_width = int(exp_width // 1)
+    width_lays_width = 1 + exp_width % 1 / num_lays_width
+
+    num_lays_height = int(exp_height // 1)
+    width_lays_height = 1 + exp_height % 1 / num_lays_height
+
+    
+    for i in range(num_lays_width):
+        # find idx of border nodes
+        conds = ['minx', 'maxx']
+
+        # expand directions (normal to border)
+        expand_dirs = [
+            np.array([-1, 0]),
+            np.array([1, 0])
+        ]
+
+        # start-end direction (parallel to border)
+        end_dirs = [
+            np.array([0, 1]),
+            np.array([0, 1])
+        ]
+
+        nd, ndlab, el, ellab = expand_mult_dirs(conds, expand_dirs, end_dirs, 
+                                                nd, ndlab, el, ellab,
+                                                num_layers=[1, 1], width=width_lays_width)
+
+
+    for i in range(num_lays_height):
+        conds = ['maxy', ]
+
+        # expand directions (normal to border)
+        expand_dirs = [
+            np.array([0, 1]),
+        ]
+
+        # start-end direction (parallel to border)
+        end_dirs = [
+            np.array([1, 0]),
+        ]
+
+        nd, ndlab, el, ellab = expand_mult_dirs(
+            conds, expand_dirs, end_dirs,nd, ndlab, el, ellab,
+            num_layers=[1,], width=width_lays_height
+        )
+    
+    # ****** ADD LOADING HOLE *******
+    circ_centre = (
+         - (specimen['W'] - specimen['A'] / 2),
+        specimen['F'] / 2
+    )
+    circ_rad = specimen['C'] / 2
+
+
+
+    pts_on_circ = utils.circle_points(circ_rad, 80, circ_centre)
+    pts_on_circ_ridge1 = utils.circle_points(circ_rad - 2, 80, circ_centre)
+
+    # FIND NODES CLOSE TO HOLE
+    atol = 13 
+    nd_dist_circ = (nd - circ_centre)[:,0] ** 2 + (nd - circ_centre)[:,1] ** 2
+    pts_in_idx = np.nonzero(nd_dist_circ < (circ_rad - 0.2) ** 2)
+    pts_out_idx = np.nonzero(nd_dist_circ >= (circ_rad - 0.2) ** 2 )[0]
+    pts_close_idx = np.nonzero(np.isclose(np.abs(nd_dist_circ - (circ_rad - 0.2) ** 2), 0, atol=atol))
+    pts_out_close_idx = np.nonzero(
+        np.logical_and(
+            np.isclose(np.abs(nd_dist_circ - (circ_rad - 0.2) ** 2), 0, atol=atol),
+    #         (pts_close_idx, nd_dist_circ >= (circ_rad - 0.2) ** 2 - 0.2)[1]
+             nd_dist_circ >= (circ_rad - 0.2) ** 2 - 0.2
+        )
+    )[0]
+
+    # nodes hole top
+    ridge_el = []
+    ridge_nd_top = []
+    ridge_ndlab_top = []
+
+    # loop through points near circle 
+    for i, pt in enumerate(nd[pts_out_close_idx]):
+        # distance between pt and pts on circle
+        diff_vecs = pt - pts_on_circ
+        dist = (diff_vecs[:,0] ** 2 + diff_vecs[:,1] ** 2) ** 0.5
+        nd[pts_out_close_idx[i]] = pts_on_circ[np.argmin(dist)]
+
+        if pts_on_circ[np.argmin(dist)][1] > 22.0:
+            ridge_nd_top.append(pts_on_circ[np.argmin(dist)][None])
+            ridge_ndlab_top.append(ndlab[pts_out_close_idx[i]])
+
+
+    ridge_sort_idx = np.argsort(np.concatenate(ridge_nd_top, axis=0)[:,0])
+    ridge_nd_top_sort = np.array(ridge_ndlab_top)[ridge_sort_idx]
+    for i, n in enumerate(ridge_nd_top_sort[:-1]):
+        ridge_el.append([
+        np.max(ndlab)+1, np.max(ndlab)+1, ridge_nd_top_sort[i+1], n
+    ])
+    ridge_el = np.array(ridge_el)
+
+
+    # REMOVE ELEMENTS
+    el_h = np.copy(el)
+    ellab_h = np.copy(ellab)
+
+    for i, e in enumerate(el_h):
+        if np.any(np.isin(e, ndlab[pts_in_idx])):
+    #         print(np.nonzero(np.isin(e, ndlab[pts_in_idx]))[0])
+    #         print(ellab_h[i], e)
+            rem_idx = np.nonzero(np.isin(e, ndlab[pts_in_idx]))[0]
+    #         print('rem_idx: ', rem_idx)
+            if rem_idx.shape[0] == 1:
+                if rem_idx[0] < len(e)-1:
+                    e[rem_idx[0]] = e[rem_idx[0]+1]
+                else:
+                    e[rem_idx[0]] = e[0]
+                el_h[i] = e
+
+    rem_idx = np.concatenate((np.nonzero(np.count_nonzero(np.isin(el_h, ndlab[pts_in_idx]), axis=1)==2)[0],
+    np.nonzero(np.count_nonzero(np.isin(el_h, ndlab[pts_in_idx]), axis=1)==3)[0],
+    ))
+    rem_idx = np.concatenate((rem_idx, np.nonzero(np.all((np.isin(el, ndlab[pts_in_idx])), axis=1))[0] ))
+
+
+    el_h = np.delete(el_h, rem_idx, axis=0)
+    ellab_h = np.delete(ellab_h, rem_idx, axis=0)
+
+    # CREATE RIDGE
+    nd = nd[pts_out_idx]
+    ndlab = ndlab[pts_out_idx]
+    nd = np.append(nd, np.array(circ_centre)[None], axis=0)
+    # print(nd)
+    ndlab = np.append(ndlab, np.max(ndlab)+1)
+    ridge_centre_lab = ndlab[-1]
+
+
+    specimen_set = (np.min(ellab_h), np.max(ellab_h))
+    el_h = np.concatenate((el_h, ridge_el))
+
+    ridge_el_set = np.arange(np.max(ellab_h)+1, np.max(ellab_h)+1+ridge_el.shape[0])
+    ellab_h = np.concatenate((ellab_h, ridge_el_set))
+
+    num_ridge_el = ridge_el.shape[0]
+    num_nodes_layer = len(ndlab)
+    loadline_nset = ndlab[-1]
+    mid_plane_set = ndlab
+    
+    # **** Find BCs ****
+    nodes_b, labs_b = find_border(nd, ndlab,
+                                  condition='miny')
+    
+    out = {
+        'node_coordinates': nd,
+        'node_labels': ndlab,
+        'element_nodes': el_h,
+        'element_labels': ellab_h,
+        'elsets':{
+            'specimen': specimen_set, #defined as list or (start, stop, [step])
+            'ridge': ridge_el_set,
+
+        },
+        'nsets': {
+            'crackfront': labs_b,
+            'load-line': loadline_nset,
+    #         'cracktip': crack_nodes['crack_line'][:,0],
+    #         'crackline': crack_nodes['crack_line'][:,1:].flatten(),
+            'cracklip': crack_nodes['crack_lip'],
+            'flank': np.concatenate((crack_nodes['crack_line'].flatten(), crack_nodes['crack_lip'])),
+            'midplane': mid_plane_set,
+        },
+    }
+    
+    return out
