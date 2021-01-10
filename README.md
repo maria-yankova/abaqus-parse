@@ -4,4 +4,4 @@
 
 Abaqus input and output file readers and writers. 
 
-Postprocess.py includes a Beremin-type local approach to cleavage fracture.
+Postprocess.py includes postprocessing functions for FE data that use a Weibull stress formulation for cleavage fracture prediction.
