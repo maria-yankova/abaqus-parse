@@ -7,7 +7,7 @@ import warnings
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #                             HEADING
 # #############################################################################
-def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_rate):
+def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_rate, law):
     
     with open(file_name, 'w') as inp_file:
         inp_file.write('*Heading\n')
@@ -19,6 +19,7 @@ def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_r
         inp_file.write('** Material angle: %s (deg)\n'%str(Material_angle))
         inp_file.write('** Groove angle: %s (deg)\n'%str(Groove_angle))
         inp_file.write('** Strain rate: %s (/s)\n'%str(Eps_rate))
+        inp_file.write('** Law: %s \n'%law)
         inp_file.write('**\n')
         inp_file.write(' units : mm,N,kg\n')
         inp_file.write('**\n')
@@ -62,112 +63,8 @@ def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
     
     if Groove_angle == 45:
         warnings.warn("Difficulties to mesh the sample. Please consider change the groove angle.")
-        # Groove_angle = Groove_angle*np.pi/180
-        # g = cfg.Geometry()
-        # g.point([0.0, L_slope+L_groove/2]) # point 0
-        # g.point([sample_size[0]-(L_slope+L_groove/2) ,  sample_size[1]]) # point 1
-        # g.point([0.0, sample_size[1]]) # point 3
-    
-        # g.spline([0, 1]) # line 0
-        # g.spline([1, 2]) # line 1
-        # g.spline([2, 0]) # line 2
-
-        # g.surface([0, 1, 2])
-            
-        # mesh = cfm.GmshMesh(g)
         
-        # mesh.elType = 3          # Degrees of freedom per node.
-        # mesh.dofsPerNode = 1     # Factor that changes element sizes.
-        # mesh.elSizeFactor = .5   # Element size Factor
-        
-        # Corner = 0  
-        # test_mesh = 0
-        # while Corner == 0:
-        #     test_mesh += 1
-        #     coords, edof, dofs, bdofs, elementmarkers = mesh.create()
-        #     Nb_fois_el = np.zeros(len(dofs))
-        #     # Trouver les bords
-        #     for x in edof:
-        #         Nb_fois_el[x-1] = Nb_fois_el[x-1]+1
-        #     if np.sum(Nb_fois_el==1)==3:
-        #         Corner = 1
-        #     else:
-        #         mesh.elSizeFactor = mesh.elSizeFactor*0.95
-        #     if test_mesh>10:
-        #         warnings.warn("Difficulties to mesh the sample. Please consider refining.")
-        #         break
-            
-            
-        # # cfv.figure()
-        # # cfv.drawMesh(
-        # #     coords=coords,
-        # #     edof=edof,
-        # #     dofs_per_node=mesh.dofsPerNode,
-        # #     el_type=mesh.elType,
-        # #     filled=True,
-        # #     title="Mesh"   
-        # #         )
-         
-        # i1 = next(x for x, value in enumerate(coords[3:-1,1]) if value>(sample_size[0]-1e-5))+1
-        # Ege_bottom_1 = coords[3:2+i1,:]
-        # Ege_bottom_1 = np.vstack([coords[0,:],Ege_bottom_1,coords[1,:]])
-        # Num_up = np.arange(3,2+i1)
-        # Num_up = np.append([0],Num_up)
-        # Num_up = np.append(Num_up,[1])
-    
-        # Num_bottom = Num_up + len(coords)
-        
-        # Coord_groove_up = Ege_bottom_1.copy()
-        # Coord_groove_up[:,1] = Coord_groove_up[:,1]-L_slope
-        
-        # f =1
-        # Coord_groove_up[:,0] = Coord_groove_up[:,0]*f
-        # Coord_groove_up[:,1] = Coord_groove_up[:,1]*f
-    
-    
-        # coord_all = coords.copy()
-        # coord_all = np.vstack([coords,Coord_groove_up])
-      
-        # connectivite = np.zeros((len(Num_up)-1,4))
-        # for i in range(len(Num_up)-1):
-        #     connectivite[i,:] = [Num_up[i],Num_up[i+1],len(coords)+i+1,len(coords)+i]
-            
-       
-       
-        # edof_all = np.vstack([edof,connectivite+1])
-        
-        # coords_2 = coord_all.copy()
-        # coords_2[:,0] = sample_size[0]-coord_all[:,0]
-        # coords_2[:,1] = sample_size[1]-coord_all[:,1]
-        
-        # connectivite_2 = edof_all.copy()
-        # connectivite_2 = connectivite_2+len(coord_all)
-        
-        # connectivite3 = np.zeros((len(Num_up)-2,4))
-        # for i in range(len(Num_up)-2):
-        #     connectivite3[i,:] = [len(coords)+i+2, len(coords)+i+3, len(Num_up)+len(coords)-i-1+len(coord_all), len(Num_up)+len(coords)-i+len(coord_all)]
-        
-        # edof_all = np.vstack([edof_all,connectivite_2,connectivite3])
-        # coord_all = np.vstack([coord_all,coords_2])
-
-        
-        # cfv.figure()
-        # cfv.drawMesh(
-        # coords=coord_all,
-        # edof=edof_all,
-        # dofs_per_node=mesh.dofsPerNode,
-        # el_type=mesh.elType,
-        # filled=True,
-        # title="Mesh"   
-        #     )
-        
-        
-        
-        
-        
-    ####  if groove NOT at 45 degree  
     else:    
-            
         Groove_angle = Groove_angle*np.pi/180
         
         g = cfg.Geometry()
@@ -222,12 +119,12 @@ def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
         Coord_groove_up = Ege_bottom_1.copy()
         Coord_groove_up[:,1] = Coord_groove_up[:,1]-L_slope
         
-        Z_groove_up = np.ones(len(Coord_groove_up))*Inhomogeneity_factor
+        Z_groove_up = np.ones(len(Coord_groove_up))*((sample_size[2]-Inhomogeneity_factor)/2+Inhomogeneity_factor)
         
         Coord_groove_bottom = Coord_groove_up.copy()
         Coord_groove_bottom[:,1] = Coord_groove_bottom[:,1]-L_groove
     
-        Z_groove_bottom = np.ones(len(Coord_groove_bottom))*Inhomogeneity_factor
+        Z_groove_bottom = np.ones(len(Coord_groove_bottom))*((sample_size[2]-Inhomogeneity_factor)/2+Inhomogeneity_factor)
 
         coords_2 = coords.copy()
         coords_2[:,0] = sample_size[0]-coords[:,0]
@@ -625,7 +522,7 @@ def amplitude(file_name, Eps_rate):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #                             MATERIALS
 # #############################################################################
-def material(file_name,E,mu,rho,Plastic,power,Barlat):
+def material(file_name, E, mu, rho, Plastic, power, Barlat, law):
     with open(file_name, 'a') as inp_file:
         inp_file.write('**\n')
         inp_file.write('**\n')
@@ -644,11 +541,25 @@ def material(file_name,E,mu,rho,Plastic,power,Barlat):
             str_line = ', '.join([' ' + str(round(x, 8)) for x in line])
             inp_file.write(str_line + '\n')
         inp_file.write('**\n')  
-        inp_file.write('*potential, type=barlat, power=%i\n'%power)
-        for line in Barlat:
-            str_line = ', '.join([' ' + str(round(x, 8)) for x in line])
-            inp_file.write(str_line + '\n')
-
+        
+        if law=='Barlat':
+            inp_file.write('*potential, type=barlat, power=%i\n'%power)
+            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f, %.6f, %.6f\n'
+                           %(Barlat[0],Barlat[1],Barlat[2],Barlat[3],Barlat[4],Barlat[5],Barlat[6],Barlat[7]))
+            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f, %.6f, %.6f\n'
+                           %(Barlat[8],Barlat[9],Barlat[10],Barlat[11],Barlat[12],Barlat[13],Barlat[14],Barlat[15]))
+            inp_file.write('%.6f, %.6f\n'
+                           %(Barlat[16],Barlat[17]))                
+        elif law=='Hill1948':
+            inp_file.write('*potential, type=hill\n')
+            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f\n'
+                               %(Barlat[0],Barlat[1],Barlat[2],Barlat[3],Barlat[4],Barlat[5]))    
+            
+        elif law=='VonMises':
+            inp_file.write('*potential, type=barlat, power=2\n')
+            inp_file.write('1., 1., 1., 1., 1., 1., 0.5, 0.5\n')
+            inp_file.write('0.5, 1., 1., 1., 1., 1., 1., 0.5\n')
+            inp_file.write('0.5, 0.5\n') 
 
   
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
