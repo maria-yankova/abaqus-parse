@@ -2,49 +2,46 @@ from abaqus_parse import write_MK_mesh
 
 def generate_MK_mesh(name_inp, FE_input_data):
     
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #                             Inputs
-    # #############################################################################
-
-                       
     ######    Sample data   ###### 
-    sample_size = FE_input_data[0]    
+    sample_size = FE_input_data['sample_size']    
     # Groove geometry
-    Inhomogeneity_factor = FE_input_data[1]  # thickness of the groove
-    L_groove = FE_input_data[2]
-    L_slope = FE_input_data[3]    
+    Inhomogeneity_factor = FE_input_data['inhomogeneity_factor']  # thickness of the groove
+    L_groove = FE_input_data['L_groove']
+    L_slope = FE_input_data['L_slope']    
     # Material angle
-    Material_angle = FE_input_data[4] # (°)    
+    Material_angle = FE_input_data['material_angle'] # (°)    
     # Groove angle
-    Groove_angle = 90 - FE_input_data[5] # (°) 
+    Groove_angle = 90 - FE_input_data['groove_angle'] # (°) 
     # Material properties
-    E = FE_input_data[6]  
-    mu = FE_input_data[7]
-    rho = FE_input_data[8]
-    law = FE_input_data[9][0][0] 
-    power = FE_input_data[9][1][0] 
-    Barlat = FE_input_data[9][2]  
-    Plastic = FE_input_data[10]  
+    E = FE_input_data['elastic_modulus']  
+    mu = FE_input_data['poisson_ratio']
+    rho = FE_input_data['density']
+
+    law = FE_input_data['law']
+    
+    Plastic = FE_input_data['plastic']  
 
     
     ######    FE data   ###### 
-    mesh_size = FE_input_data[11]
-    Element_type = FE_input_data[13]   
+    mesh_size = FE_input_data['mesh_size']
+    Element_type = FE_input_data['elem_type']   
     # Strain rate (/s)
-    Eps_rate = FE_input_data[14]  
+    Eps_rate = FE_input_data['strain_rate']  
+    
     # Step time (put 0 => default Abaqus value)
-    time_step = FE_input_data[15]  # Time period of the step (s)
-    dt_i = FE_input_data[17][0] # Suggested initial time increment (s)
-    dt_min = FE_input_data[17][1]  # Minimum time increment allowed (s)
-    dt_max = FE_input_data[17][2]  # Maximum time increment allowed (s)
+    time_step = FE_input_data['total_time']  # Time period of the step (s) # Check this is right
+
+    dt_i = FE_input_data['time_step'][0]    # Suggested initial time increment (s)
+    dt_min = FE_input_data['time_step'][1]  # Minimum time increment allowed (s)
+    dt_max = FE_input_data['time_step'][2]  # Maximum time increment allowed (s)
     # Bulk viscosity
-    b1 = FE_input_data[12][0]  # Linear bulk viscosity parameter
-    b2 = FE_input_data[12][1]  # Quadratic bulk viscosity parameter  
+    b1 = FE_input_data['bulk_parameters'][0]  # Linear bulk viscosity parameter
+    b2 = FE_input_data['bulk_parameters'][1]  # Quadratic bulk viscosity parameter  
     # Boundary conditions
-    U_left = FE_input_data[16][0]  # (mm) along x
-    U_right = FE_input_data[16][1]  # (mm) along x
-    U_up = FE_input_data[16][2]  # (mm) along y
-    U_bottom = FE_input_data[16][3] # (mm) along y
+    U_left = FE_input_data['displacment_BC'][0]  # (mm) along x
+    U_right = FE_input_data['displacment_BC'][1]  # (mm) along x
+    U_up = FE_input_data['displacment_BC'][2]  # (mm) along y
+    U_bottom = FE_input_data['displacment_BC'][3] # (mm) along y
     
     
     
@@ -59,7 +56,7 @@ def generate_MK_mesh(name_inp, FE_input_data):
     
     write_MK_mesh.amplitude(name_inp, Eps_rate)
     
-    write_MK_mesh.material(name_inp, E, mu, rho, Plastic, power, Barlat, law)
+    write_MK_mesh.material(name_inp, E, mu, rho, Plastic, law)
     
     write_MK_mesh.step(name_inp, time_step, dt_i, dt_min, dt_max, b1, b2, U_left,
                    U_right, U_up, U_bottom)
