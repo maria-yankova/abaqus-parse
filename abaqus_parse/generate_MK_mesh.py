@@ -29,7 +29,8 @@ def generate_MK_mesh(name_inp, FE_input_data):
     
     ######    FE data   ###### 
     mesh_size = FE_input_data[11]
-    Element_type = FE_input_data[13]   
+    Element_type = FE_input_data[13] 
+    Nb_el_thickness = FE_input_data[18]  
     # Strain rate (/s)
     Eps_rate = FE_input_data[14]  
     # Step time (put 0 => default Abaqus value)
@@ -45,6 +46,7 @@ def generate_MK_mesh(name_inp, FE_input_data):
     U_right = FE_input_data[16][1]  # (mm) along x
     U_up = FE_input_data[16][2]  # (mm) along y
     U_bottom = FE_input_data[16][3] # (mm) along y
+    Max_plastic_strain = FE_input_data[19] # Eq. plastic strain PEEQ
     
     
     
@@ -55,11 +57,11 @@ def generate_MK_mesh(name_inp, FE_input_data):
     write_MK_mesh.heading(name_inp, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_rate, law)
     
     write_MK_mesh.part(name_inp, sample_size, mesh_size, Inhomogeneity_factor,
-                   L_groove, L_slope, Element_type, Material_angle, Groove_angle)
+                   L_groove, L_slope, Element_type, Material_angle, Groove_angle, Nb_el_thickness)
     
     write_MK_mesh.amplitude(name_inp, Eps_rate)
     
     write_MK_mesh.material(name_inp, E, mu, rho, Plastic, power, Barlat, law)
     
     write_MK_mesh.step(name_inp, time_step, dt_i, dt_min, dt_max, b1, b2, U_left,
-                   U_right, U_up, U_bottom)
+                   U_right, U_up, U_bottom, Max_plastic_strain)

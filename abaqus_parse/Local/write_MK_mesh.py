@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import calfem.geometry as cfg
 import calfem.mesh as cfm
 # import calfem.vis as cfv
@@ -31,7 +31,7 @@ def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_r
 #                             PART
 # #############################################################################
 def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
-         L_slope, Element_type, Material_angle, Groove_angle, Nb_el_thickness):
+         L_slope, Element_type, Material_angle, Groove_angle):
 
     with open(file_name, 'a') as inp_file:
         inp_file.write('** PART\n')
@@ -186,24 +186,24 @@ def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
     #     title="Mesh"   
     #         )   
     
+    el_th = 6
     coord_all_th = []
     Z_coord_th = Z_coord_all.copy()
     X_coord_th = coord_all[:,0]
     Y_coord_th = coord_all[:,1]
-    
-    Nb_el_thickness = int(Nb_el_thickness)
-    Coordinate = np.zeros(((Nb_el_thickness+1)*len(coord_all), 4))   
-    Coordinate[:,0] = np.array(range((Nb_el_thickness+1)*len(coord_all)))+1
+   
+    Coordinate = np.zeros(((el_th+1)*len(coord_all), 4))   
+    Coordinate[:,0] = np.array(range((el_th+1)*len(coord_all)))+1
     
 
     
-    for i in range(Nb_el_thickness):
+    for i in range(el_th):
         Z_coord_all_surface = Z_coord_all.copy()
         Z_coord_all_surface = abs(Z_coord_all-sample_size[2])
         
         coord_all_th.append(coord_all.copy())
         
-        Z_coord_th  = np.concatenate([Z_coord_th, Z_coord_all * (Nb_el_thickness - (i+1))/Nb_el_thickness + Z_coord_all_surface * (i+1)/Nb_el_thickness])
+        Z_coord_th  = np.concatenate([Z_coord_th, Z_coord_all * (el_th - (i+1))/el_th + Z_coord_all_surface * (i+1)/el_th])
         X_coord_th = np.concatenate([X_coord_th,coord_all[:,0]])
         Y_coord_th = np.concatenate([Y_coord_th,coord_all[:,1]])
 
@@ -233,7 +233,7 @@ def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
     el_node =  np.zeros((8))
 
     Num = 0
-    for el in range(Nb_el_thickness):
+    for el in range(el_th):
         for i in range(len(edof_all)):
             Num += 1
             el_node[0] = edof_all[i,3] + len(coord_all)*el
@@ -594,7 +594,7 @@ def material(file_name, E, mu, rho, Plastic, power, Barlat, law):
 #                             STEP
 # #############################################################################
 def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
-         U_up, U_bottom, Max_plastic_strain):
+         U_up, U_bottom):
     
     ###################################
     ####           Step           #####
@@ -653,14 +653,13 @@ def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
         
         ###################################
         ####    Stopping criteria     #####
-        ################################### 
-        if Max_plastic_strain > 0.0:  
-	        inp_file.write('*EXTREME VALUE, HALT=YES\n')
-	        inp_file.write('*EXTREME ELEMENT VALUE, ELSET=MK_sample-1.Sheet_Elements, MAX\n')    
-	        inp_file.write('\n')
-	        inp_file.write('PEEQ, %.4f\n'%Max_plastic_strain)        
-	        inp_file.write('**\n')
-	        inp_file.write('**\n')        
+        ###################################     
+        inp_file.write('*EXTREME VALUE, HALT=YES\n')
+        inp_file.write('*EXTREME ELEMENT VALUE, ELSET=Sheet_Elements, MAX\n')    
+        inp_file.write('\n')
+        inp_file.write('PEEQ, 0.7\n')        
+        inp_file.write('**\n')
+        inp_file.write('**\n')        
         ###################################
         ####           Outputs        #####
         ###################################  
