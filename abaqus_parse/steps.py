@@ -10,12 +10,12 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         'initial-step': {
             'bcs': [
                 {
-                'node set': 'load-line',
-                'dof': (1, 1)
+                    'node set': 'load-line',
+                    'dof': (1, 1)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (2, 2)
+                    'node set': 'load-line',
+                    'dof': (2, 2)
                 },
                 {
                     'node set': 'crackfront',
@@ -30,15 +30,15 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         'load-step-1': {
             'name': 'Step-1',
             'type': 'Static',
-            'time_increment_definition': time_increment_def, #(0.02, 1.0, 1e-08, 0.02),
-            'bcs':[{
+            'time_increment_definition': time_increment_def,  # (0.02, 1.0, 1e-08, 0.02),
+            'bcs': [{
                 'node set': 'load-line',
                 'dof': (2, 2, applied_displacement)
-            },],
+            }, ],
             'output':
             {
                 'restart frequency': 0,
-                'field':[
+                'field': [
                     {
                         'output type': 'node',
                         'variables': ['COORD', 'U'],
@@ -58,7 +58,7 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
                         {
                             'name': 'CRACK',
                             'contours': number_contours,
-    #                         'crack tip nodes': [ 'crackline', 'cracktip'],
+                            #                         'crack tip nodes': [ 'crackline', 'cracktip'],
                             'crack tip nodes': [],
                             'symmetry': True,
                             'direction': [1, 0, 0],
@@ -66,7 +66,7 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
                     ]
                 },
             }
-            
+
         }
     }
 

@@ -7,8 +7,7 @@ from abaqus_parse.mesh import (
 
 
 def generate_compact_tension_specimen_parts(dimension, mesh_definition,
-                     elem_type, size_type, fraction, specimen_material):
-
+                                            elem_type, size_type, fraction, specimen_material):
     """
     Parameters
     -----------
@@ -30,11 +29,11 @@ def generate_compact_tension_specimen_parts(dimension, mesh_definition,
         'ct-specimen': {
             **compact_tension_specimen_mesh(refined_mesh_definition, dimension, size_type, fraction),
             'element_type': elem_type,
-            'sections':[
+            'sections': [
                 {
                     'type': 'Solid',
                     'material': specimen_material,
-                    'elset': 'specimen'    
+                    'elset': 'specimen'
                 },
                 {
                     'type': 'Solid',
@@ -44,4 +43,3 @@ def generate_compact_tension_specimen_parts(dimension, mesh_definition,
             ],
         }
     }
-    

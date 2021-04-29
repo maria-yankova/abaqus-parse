@@ -1,7 +1,8 @@
 import numpy as np
 
+
 def save_model_response(fname):
-    
+
     data = np.loadtxt(fname, comments='%')
 
     model_response = {

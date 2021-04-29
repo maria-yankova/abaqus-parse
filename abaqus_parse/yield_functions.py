@@ -10,6 +10,7 @@ def prepare_Hill1948_parameters(parameters):
         parameters['N'],
     ],
 
+
 def prepare_Barlat_Yld91_parameters(parameters):
     """Prepare the parameter list for the Barlat_Yld91 yield function."""
     return [
@@ -18,8 +19,9 @@ def prepare_Barlat_Yld91_parameters(parameters):
         parameters['c'],
         parameters['f'],
         parameters['g'],
-        parameters['h'],        
+        parameters['h'],
     ]
+
 
 def prepare_Barlat_Yld2004_18p_parameters(parameters):
     """Prepare the parameter list for the Barlat_Yld2004_18p yield function."""
@@ -43,6 +45,7 @@ def prepare_Barlat_Yld2004_18p_parameters(parameters):
         parameters['c_dp_55'] * 0.5,
         parameters['c_dp_44'] * 0.5,
     ]
+
 
 YIELD_FUNC_LOOKUP = {
     'Barlat_Yld91': prepare_Barlat_Yld91_parameters,

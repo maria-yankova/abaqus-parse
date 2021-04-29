@@ -1,6 +1,7 @@
 import numpy as np
 from warnings import warn
 
+
 def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold,
                                 num_groove_angles):
     """
@@ -29,7 +30,7 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
                 Each column is the most conservative forming limit (minor and major
                 strain) for a given strain path.
 
-    """    
+    """
 
     num_strain_paths = int(len(all_model_responses) / num_groove_angles)
     forming_limit_curve = {
@@ -37,7 +38,7 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
                          for _ in range(num_strain_paths)],
         'forming_limits': None,
     }
-    
+
     for resp_idx, resp in enumerate(all_model_responses):
 
         groove_angle_idx = resp_idx // num_strain_paths
@@ -46,9 +47,9 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
         dt = np.gradient(resp['time'])
         first_derivative_mid = np.gradient(resp['LE_mid_mises']) / dt
         first_derivative_corner = np.gradient(resp['LE_corner_mises']) / dt
-        
+
         strain_rate_ratio = first_derivative_mid / first_derivative_corner
-        
+
         # loop over all corners?
         try:
             first_threshold_idx = np.where(
@@ -62,9 +63,9 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
 
         minor_strain = resp['LE_corner_22'][:first_threshold_idx + 1]
         major_strain = resp['LE_corner_11'][:first_threshold_idx + 1]
-        strain_path = np.vstack((minor_strain, major_strain))        
+        strain_path = np.vstack((minor_strain, major_strain))
         forming_limit_curve['strain_paths'][strain_path_idx][groove_angle_idx] = strain_path
-        
+
     # Get the overal forming limit for each strain path, taking the smallest major strain
     # over all groove angles for a given strain path:
     forming_limits = []
@@ -85,9 +86,9 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
 
         safest_angle_idx = np.argmin(all_max_maj)
         forming_limits.append(
-            forming_limit_curve['strain_paths'][strain_path_idx][safest_angle_idx][:, -1]            
-        )    
-    
+            forming_limit_curve['strain_paths'][strain_path_idx][safest_angle_idx][:, -1]
+        )
+
     forming_limit_curve['forming_limits'] = np.array(forming_limits).T
 
     return forming_limit_curve
