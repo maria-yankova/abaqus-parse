@@ -4,6 +4,8 @@ import calfem.mesh as cfm
 # import calfem.vis as cfv
 import warnings
 
+from abaqus_parse.yield_functions import YIELD_FUNC_LOOKUP
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #                             HEADING
 # #############################################################################
@@ -550,7 +552,8 @@ def amplitude(file_name, Eps_rate):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #                             MATERIALS
 # #############################################################################
-def material(file_name, E, mu, rho, Plastic, power, Barlat, law):
+def material(file_name, E, mu, rho, Plastic, law):
+    
     with open(file_name, 'a') as inp_file:
         inp_file.write('**\n')
         inp_file.write('**\n')
@@ -569,25 +572,36 @@ def material(file_name, E, mu, rho, Plastic, power, Barlat, law):
             str_line = ', '.join([' ' + str(round(x, 8)) for x in line])
             inp_file.write(str_line + '\n')
         inp_file.write('**\n')  
-        
-        if law=='Barlat':
-            inp_file.write('*potential, type=barlat, power=%i\n'%power)
-            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f, %.6f, %.6f\n'
-                           %(Barlat[0],Barlat[1],Barlat[2],Barlat[3],Barlat[4],Barlat[5],Barlat[6],Barlat[7]))
-            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f, %.6f, %.6f\n'
-                           %(Barlat[8],Barlat[9],Barlat[10],Barlat[11],Barlat[12],Barlat[13],Barlat[14],Barlat[15]))
-            inp_file.write('%.6f, %.6f\n'
-                           %(Barlat[16],Barlat[17]))                
-        elif law=='Hill1948':
-            inp_file.write('*potential, type=hill\n')
-            inp_file.write('%.6f, %.6f, %.6f, %.6f ,%.6f, %.6f\n'
-                               %(Barlat[0],Barlat[1],Barlat[2],Barlat[3],Barlat[4],Barlat[5]))    
             
-        elif law=='VonMises':
-            inp_file.write('*potential, type=barlat, power=2\n')
-            inp_file.write('1., 1., 1., 1., 1., 1., 0.5, 0.5\n')
-            inp_file.write('0.5, 1., 1., 1., 1., 1., 1., 0.5\n')
-            inp_file.write('0.5, 0.5\n') 
+        law_params_list = []
+        if YIELD_FUNC_LOOKUP.get(law['type']):
+            law_params_list = YIELD_FUNC_LOOKUP.get(law['type'])(law['parameters'])        
+        
+        PARAMS_PER_LINE = 8
+        law_params_list_str = ''
+        for idx, i in enumerate(law_params_list):
+            if (idx % PARAMS_PER_LINE) == (PARAMS_PER_LINE - 1):
+                end_char = '\n'
+            elif idx == (len(law_params_list) - 1):
+                end_char = '\n'
+            else:
+                end_char = ', '
+            law_params_list_str += f'{i:.6f}{end_char}'
+
+        if law['type'] == 'Tresca':
+            inp_file.write('*potential, type=tresca\n')
+        if law['type'] == 'Hill1948':
+            inp_file.write('*potential, type=hill\n')
+        elif law['type'] == 'Hosford':
+            inp_file.write(f'*potential, type=hosford, power={law["power"]}\n')            
+        if law['type'] == 'Barlat_Yld91':
+            inp_file.write(f'*potential, type=barlat91, power={law["power"]}\n')
+        elif law['type'] == 'Barlat_Yld2004_18p':
+            inp_file.write(f'*potential, type=barlat, power={law["power"]}\n')
+        elif law['type'] != 'VonMises':
+            raise ValueError(f'Unknown yield function type: {law["type"]}.')
+
+        inp_file.write(law_params_list_str)
 
   
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
