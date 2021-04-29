@@ -16,6 +16,7 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
             LE_corner_11
     strain_rate_ratio_threshold : number
     num_groove_angles : int
+
     Returns
     -------
     forming_limit_curve : dict
@@ -28,6 +29,7 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
             forming_limits : ndarray
                 Each column is the most conservative forming limit (minor and major
                 strain) for a given strain path.
+
     """
 
     num_strain_paths = int(len(all_model_responses) / num_groove_angles)
