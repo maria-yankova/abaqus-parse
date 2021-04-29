@@ -5,16 +5,19 @@ def save_model_response(fname):
 
     data = np.loadtxt(fname, comments='%')
 
+    nb_el = int(np.where(data[:, 0] > 0.0)[0][0])
+    nb_frame = int(np.shape(data)[0]/nb_el)
+
+    time = data[0:-1:nb_el, 0]
+    LE_mises = np.reshape(data[:, 2], [nb_frame, nb_el])
+    LE_11 = np.reshape(data[:, 3], [nb_frame, nb_el])
+    LE_22 = np.reshape(data[:, 4], [nb_frame, nb_el])
+
     model_response = {
-        'time': data[:, 0],
-        'S_mid_mises': data[:, 1],
-        'LE_mid_mises': data[:, 2],
-        'LE_mid_11': data[:, 3],
-        'LE_mid_22': data[:, 4],
-        'S_corner_mises': data[:, 5],
-        'LE_corner_mises': data[:, 6],
-        'LE_corner_11': data[:, 7],
-        'LE_corner_22': data[:, 8],
+        'time': time,
+        'LE_mises': LE_mises,
+        'LE_11': LE_11,
+        'LE_22': LE_22,
     }
 
     return model_response

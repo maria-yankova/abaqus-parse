@@ -44,13 +44,17 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
         groove_angle_idx = resp_idx // num_strain_paths
         strain_path_idx = resp_idx % num_strain_paths
 
-        dt = np.gradient(resp['time'])
-        first_derivative_mid = np.gradient(resp['LE_mid_mises']) / dt
-        first_derivative_corner = np.gradient(resp['LE_corner_mises']) / dt
+        first_derivative = np.diff(resp['LE_11'], axis=0)
 
-        strain_rate_ratio = first_derivative_mid / first_derivative_corner
+        min_derivative = np.min(first_derivative, axis=1)
+        max_derivative = np.max(first_derivative, axis=1)
+        idx_min = np.argmin(first_derivative, axis=1)
+        idx_max = np.argmax(first_derivative, axis=1)
 
-        # loop over all corners?
+        min_derivative[min_derivative == 0.0] = 0.0000001
+
+        strain_rate_ratio = abs(max_derivative / min_derivative)
+
         try:
             first_threshold_idx = np.where(
                 strain_rate_ratio >= strain_rate_ratio_threshold
@@ -61,8 +65,13 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
                  f'{groove_angle_idx} and strain_path_idx: {strain_path_idx}.')
             continue
 
-        minor_strain = resp['LE_corner_22'][:first_threshold_idx + 1]
-        major_strain = resp['LE_corner_11'][:first_threshold_idx + 1]
+        idx_max = idx_max[first_threshold_idx]
+        idx_min = idx_min[first_threshold_idx]
+
+        first_threshold_idx = first_threshold_idx+1
+
+        minor_strain = resp['LE_22'][:first_threshold_idx + 1, idx_min]
+        major_strain = resp['LE_11'][:first_threshold_idx + 1, idx_max]
         strain_path = np.vstack((minor_strain, major_strain))
         forming_limit_curve['strain_paths'][strain_path_idx][groove_angle_idx] = strain_path
 
