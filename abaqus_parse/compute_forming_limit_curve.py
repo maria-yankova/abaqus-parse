@@ -3,7 +3,7 @@ from warnings import warn
 
 
 def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold,
-                                num_groove_angles):
+                                all_displacement_BCs, all_groove_angles):
     """
     Parameters
     ----------
@@ -32,28 +32,42 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
 
     """
 
-    num_strain_paths = int(len(all_model_responses) / num_groove_angles)
+    num_strain_paths = len(all_displacement_BCs)
+    num_groove_angles = len(all_groove_angles)
     forming_limit_curve = {
-        'strain_paths': [[None for _ in range(num_groove_angles)]
-                         for _ in range(num_strain_paths)],
-        'forming_limits': None,
+        'displacement_BCs': all_displacement_BCs,
+        'groove_angles': all_groove_angles,
     }
 
-    for resp_idx, resp in enumerate(all_model_responses):
+    strain_paths = []
 
-        groove_angle_idx = resp_idx // num_strain_paths
-        strain_path_idx = resp_idx % num_strain_paths
+    for resp_idx, (resp, groove_angle, disp_BCs) in enumerate(zip(
+        all_model_responses,
+        all_groove_angles,
+        all_displacement_BCs
+    )):
 
         first_derivative = np.diff(resp['LE_11'], axis=0)
 
-        min_derivative = np.min(first_derivative, axis=1)
-        max_derivative = np.max(first_derivative, axis=1)
-        idx_min = np.argmin(first_derivative, axis=1)
-        idx_max = np.argmax(first_derivative, axis=1)
+        # For all increments, identify elements with min/max strain rate:
+        elem_idx_min = np.argmin(first_derivative, axis=1)
+        elem_idx_max = np.argmax(first_derivative, axis=1)
 
-        min_derivative[min_derivative == 0.0] = 0.0000001
+        # For all increments, find min/max strain rate over all elements
+        min_derivative = first_derivative[:, elem_idx_min]
+        max_derivative = first_derivative[:, elem_idx_max]
 
-        strain_rate_ratio = abs(max_derivative / min_derivative)
+        # For all increments, maximal strain rate ratio
+        min_derivative[np.isclose(min_derivative, 0)] = np.nan
+        strain_rate_ratio = np.abs(max_derivative / min_derivative)
+
+        strain_path_i = {
+            'groove_angle_deg': groove_angle,
+            'displacement_BCs': disp_BCs,
+            'strain_rate_ratio': strain_rate_ratio,
+            'strain': None,
+        }
+        strain_paths.append(strain_path_i)
 
         try:
             first_threshold_idx = np.where(
@@ -61,43 +75,50 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
             )[0][0]
         except IndexError:
             warn(f'Simulation did not reach the target threshold value '
-                 f'({strain_rate_ratio_threshold}) for groove_angle_idx '
-                 f'{groove_angle_idx} and strain_path_idx: {strain_path_idx}.')
+                 f'({strain_rate_ratio_threshold}) for groove angle '
+                 f'{groove_angle} (degrees) and displacment BCs: {disp_BCs}.')
             continue
 
-        idx_max = idx_max[first_threshold_idx]
-        idx_min = idx_min[first_threshold_idx]
+        idx_max = elem_idx_max[first_threshold_idx]
+        idx_min = elem_idx_min[first_threshold_idx]
 
-        first_threshold_idx = first_threshold_idx+1
+        first_threshold_idx = first_threshold_idx + 1
 
         minor_strain = resp['LE_22'][:first_threshold_idx + 1, idx_min]
-        major_strain = resp['LE_11'][:first_threshold_idx + 1, idx_max]
+        major_strain = resp['LE_11'][:first_threshold_idx + 1, idx_min]
         strain_path = np.vstack((minor_strain, major_strain))
-        forming_limit_curve['strain_paths'][strain_path_idx][groove_angle_idx] = strain_path
+        strain_paths[-1].update({'strain': strain_path})
+
+    forming_limit_curve.update({'strain_paths': strain_paths})
 
     # Get the overal forming limit for each strain path, taking the smallest major strain
     # over all groove angles for a given strain path:
     forming_limits = []
-    for strain_path_idx in range(num_strain_paths):
+    for disp_BC in all_displacement_BCs:
 
-        if all([i is None for i in forming_limit_curve['strain_paths'][strain_path_idx]]):
+        strain_paths_sub = [i for i in strain_paths if i['displacement_BCs'] == disp_BC]
+
+        if all([i['strain'] is None for i in strain_paths_sub]):
             warn(f'No simulations (at any groove angle) reached the target threshold '
-                 f'value for strain_path_idx: {strain_path_idx}.')
+                 f'value for disp_BC: {disp_BC}.')
             forming_limits.append([np.nan, np.nan])
             continue
 
         all_max_maj = []
-        for groove_angle_i_path in forming_limit_curve['strain_paths'][strain_path_idx]:
-            if groove_angle_i_path is None:
+        # Looping over groove angles:
+        for strain_path_i in strain_paths_sub:
+            if strain_path_i['strain'] is None:
                 all_max_maj.append(np.inf)
             else:
-                all_max_maj.append(np.max(groove_angle_i_path[1]))
+                all_max_maj.append(np.max(strain_path_i['strain'][1]))
 
         safest_angle_idx = np.argmin(all_max_maj)
-        forming_limits.append(
-            forming_limit_curve['strain_paths'][strain_path_idx][safest_angle_idx][:, -1]
-        )
+        forming_limits.append(strain_paths_sub[safest_angle_idx]['strain'][:, -1])
 
-    forming_limit_curve['forming_limits'] = np.array(forming_limits).T
+    forming_limits = np.array(forming_limits)
+    srt_idx = np.argsort(forming_limits[:, 0])  # Sort by minor strain
+    final_forming_limits = forming_limits[srt_idx].T  # Transpose to column vectors
+
+    forming_limit_curve.update({'forming_limits': final_forming_limits})
 
     return forming_limit_curve
