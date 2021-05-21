@@ -15,7 +15,8 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
             LE_corner_22
             LE_corner_11
     strain_rate_ratio_threshold : number
-    num_groove_angles : int
+    all_displacement_BCs : list of list
+    all_groove_angles : list of float
 
     Returns
     -------
@@ -32,8 +33,6 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
 
     """
 
-    num_strain_paths = len(all_displacement_BCs)
-    num_groove_angles = len(all_groove_angles)
     forming_limit_curve = {
         'displacement_BCs': all_displacement_BCs,
         'groove_angles': all_groove_angles,
@@ -41,11 +40,11 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
 
     strain_paths = []
 
-    for resp_idx, (resp, groove_angle, disp_BCs) in enumerate(zip(
+    for resp, groove_angle, disp_BCs in zip(
         all_model_responses,
         all_groove_angles,
         all_displacement_BCs
-    )):
+    ):
 
         first_derivative = np.diff(resp['LE_11'], axis=0)
 
@@ -79,7 +78,6 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
                  f'{groove_angle} (degrees) and displacment BCs: {disp_BCs}.')
             continue
 
-        idx_max = elem_idx_max[first_threshold_idx]
         idx_min = elem_idx_min[first_threshold_idx]
 
         first_threshold_idx = first_threshold_idx + 1
