@@ -6,9 +6,6 @@ import warnings
 
 from abaqus_parse.yield_functions import YIELD_FUNC_LOOKUP
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#                             HEADING
-# #############################################################################
 def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_rate, law):
     
     with open(file_name, 'w') as inp_file:
@@ -29,9 +26,6 @@ def heading(file_name, Inhomogeneity_factor, Material_angle, Groove_angle, Eps_r
         inp_file.write('**\n')
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#                             PART
-# #############################################################################
 def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
          L_slope, Element_type, Material_angle, Groove_angle, Nb_el_thickness):
 
@@ -394,9 +388,6 @@ def part(file_name, sample_size, mesh_size, Inhomogeneity_factor, L_groove,
         
     
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#                          STRAIN(t)  AMPLITUDE
-# #############################################################################
 def amplitude(file_name, Eps_rate):
 
     Strain_Time_Table = [0.0, 0.0, 1.0/Eps_rate*0.01, 0.201003342, 1.0/Eps_rate*0.02,
@@ -549,9 +540,6 @@ def amplitude(file_name, Eps_rate):
             inp_file.write(str_line + '\n')
             
   
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#                             MATERIALS
-# #############################################################################
 def material(file_name, E, mu, rho, Plastic, law):
     
     with open(file_name, 'a') as inp_file:
@@ -604,9 +592,6 @@ def material(file_name, E, mu, rho, Plastic, law):
         inp_file.write(law_params_list_str)
 
   
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#                             STEP
-# #############################################################################
 def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
          U_up, U_bottom, Max_plastic_strain):
     
