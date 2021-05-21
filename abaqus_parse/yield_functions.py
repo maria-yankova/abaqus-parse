@@ -1,14 +1,18 @@
+import numpy as np
+
+
 def prepare_Hill1948_parameters(parameters):
     """Prepare the parameter list for the Hill1948 yield function."""
-    # TODO: correct this; should be given in terms of "anisotropic yield stress ratios"
-    return [
-        parameters['F'],
-        parameters['G'],
-        parameters['H'],
-        parameters['L'],
-        parameters['M'],
-        parameters['N'],
-    ],
+
+    R33 = np.sqrt(1 / (parameters['F'] + parameters['G']))
+    R22 = np.sqrt(1 / (parameters['F'] + parameters['H']))
+    R11 = np.sqrt(1 / (parameters['G'] + parameters['H']))
+
+    R23 = np.sqrt(3 / (2 * parameters['L']))
+    R13 = np.sqrt(3 / (2 * parameters['M']))
+    R12 = np.sqrt(3 / (2 * parameters['N']))
+
+    return [R11, R22, R33, R12, R13, R23]
 
 
 def prepare_Barlat_Yld91_parameters(parameters):
@@ -50,4 +54,5 @@ def prepare_Barlat_Yld2004_18p_parameters(parameters):
 YIELD_FUNC_LOOKUP = {
     'Barlat_Yld91': prepare_Barlat_Yld91_parameters,
     'Barlat_Yld2004_18p': prepare_Barlat_Yld2004_18p_parameters,
+    'Hill1948': prepare_Hill1948_parameters,
 }
