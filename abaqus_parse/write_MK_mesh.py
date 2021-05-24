@@ -667,7 +667,7 @@ def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
         inp_file.write('**\n')
         inp_file.write('*Restart, write, number interval=1, time marks=NO\n')
         inp_file.write('**\n')
-        inp_file.write('*Output, field\n')
+        inp_file.write('*Output, field, NUMBER INTERVAL=100\n')
         inp_file.write('*Node Output\n')
         inp_file.write('COORD, U, V\n')
         inp_file.write('*Element Output, directions=YES\n')
