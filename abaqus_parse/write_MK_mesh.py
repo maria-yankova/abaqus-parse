@@ -593,7 +593,7 @@ def material(file_name, E, mu, rho, Plastic, law):
 
   
 def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
-         U_up, U_bottom, Max_plastic_strain):
+         U_up, U_bottom, Max_plastic_strain, num_interval):
     
     ###################################
     ####           Step           #####
@@ -667,7 +667,10 @@ def step(file_name, time_step, dt_i, dt_min, dt_max, b1, b2, U_left, U_right,
         inp_file.write('**\n')
         inp_file.write('*Restart, write, number interval=1, time marks=NO\n')
         inp_file.write('**\n')
-        inp_file.write('*Output, field, NUMBER INTERVAL=100\n')
+        
+        num_interval_str = f', NUMBER INTERVAL={num_interval}' if num_interval else ''
+        
+        inp_file.write(f'*Output, field{num_interval_str}\n')
         inp_file.write('*Node Output\n')
         inp_file.write('COORD, U, V\n')
         inp_file.write('*Element Output, directions=YES\n')

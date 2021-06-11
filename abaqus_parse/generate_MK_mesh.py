@@ -44,6 +44,7 @@ def generate_MK_mesh(name_inp, FE_input_data):
     U_up = FE_input_data['displacment_BC'][2]  # (mm) along y
     U_bottom = FE_input_data['displacment_BC'][3]  # (mm) along y
     Max_plastic_strain = FE_input_data['max_plastic_strain']  # Eq. plastic strain PEEQ
+    num_interval = FE_input_data.get('num_interval')
 
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #                             Writing
@@ -59,4 +60,4 @@ def generate_MK_mesh(name_inp, FE_input_data):
     write_MK_mesh.material(name_inp, E, mu, rho, Plastic, law)
 
     write_MK_mesh.step(name_inp, time_step, dt_i, dt_min, dt_max, b1, b2, U_left,
-                       U_right, U_up, U_bottom, Max_plastic_strain)
+                       U_right, U_up, U_bottom, Max_plastic_strain, num_interval)
