@@ -578,11 +578,11 @@ def material(file_name, E, mu, rho, Plastic, law):
 
         if law['type'] == 'Tresca':
             inp_file.write('*potential, type=tresca\n')
-        if law['type'] == 'Hill1948':
+        elif law['type'] == 'Hill1948':
             inp_file.write('*potential, type=hill\n')
         elif law['type'] == 'Hosford':
             inp_file.write(f'*potential, type=hosford, power={law["power"]}\n')            
-        if law['type'] == 'Barlat_Yld91':
+        elif law['type'] == 'Barlat_Yld91':
             inp_file.write(f'*potential, type=barlat91, power={law["power"]}\n')
         elif law['type'] == 'Barlat_Yld2004_18p':
             inp_file.write(f'*potential, type=barlat, power={law["power"]}\n')
