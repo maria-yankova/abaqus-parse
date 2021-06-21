@@ -107,6 +107,7 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
             warn(f'No simulations (at any groove angle) reached the target threshold '
                  f'value for disp_BC: {disp_BC}.')
             forming_limits.append([np.nan, np.nan])
+            selected_angles.append(np.nan)
             continue
 
         all_max_maj = []
@@ -122,9 +123,10 @@ def compute_forming_limit_curve(all_model_responses, strain_rate_ratio_threshold
         selected_angles.append(strain_paths_sub[safest_angle_idx]['groove_angle_deg'])
 
     forming_limits = np.array(forming_limits)
+    selected_angles = np.array(selected_angles)
     srt_idx = np.argsort(forming_limits[:, 0])  # Sort by minor strain
     final_forming_limits = forming_limits[srt_idx].T  # Transpose to column vectors
-    selected_angles = np.array(selected_angles)[srt_idx]
+    selected_angles = selected_angles[srt_idx]
 
     forming_limit_curve.update({
         'forming_limits': final_forming_limits,
