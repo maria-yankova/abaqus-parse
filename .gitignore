@@ -106,4 +106,8 @@ venv.bak/
 # VS Code
 .vscode
 
-./demos/save-input-data
+/demos/save-input-data
+
+scratch.py
+
+/scratch
