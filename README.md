@@ -1,4 +1,4 @@
-https://mybinder.org/v2/gh/maria-yankova/abaqus-parse/HEAD
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/maria-yankova/abaqus-parse/HEAD)
 
 # abaqus-parse
 
