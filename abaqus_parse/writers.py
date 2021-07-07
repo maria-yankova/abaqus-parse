@@ -258,7 +258,7 @@ def write_inp(path, materials, parts, steps, assembly=None):
                             if 'position' in fo.keys():
                                 stps.append(', position='+fo['position'])
                             if 'set name' in fo.keys():
-                                stps.append(', elset='+fo['set'])
+                                stps.append(', elset='+fo['set name'])
                             if 'frequency' in fo.keys():
                                 stps.append(', frequency='+str(fo['frequency']))
                             stps.append('\n'+ ', '.join(fo['variables']) + '\n')     
@@ -266,21 +266,21 @@ def write_inp(path, materials, parts, steps, assembly=None):
                     stps.append(
                         '*Output, history, frequency=' + str(vo['frequency']) + '\n'
                     )
-                    # if 'cracks' in vo.keys():
-                    #     for crack in vo['cracks']:
-                    #         stps.append(
-                    #             '*Contour Integral, crack name=' + str(crack['name']) + ', contours=' + str(crack['contours'])
-                    #         )
-                    #         if 'crack tip nodes' in crack.keys():
-                    #             stps.append(', crack tip nodes')
-                    #             if crack['symmetry']:
-                    #                 stps.append(', symm')
-                    #             stps.append('\n')
-                    #             if any(isinstance(el, list) for el in crack['crack tip nodes']):
-                    #                 for cr in crack['crack tip nodes']:
-                    #                      stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
-                    #             else:
-                    #                 stps.append('\n' + crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                    if 'cracks' in vo.keys():
+                        for crack in vo['cracks']:
+                            stps.append(
+                                '*Contour Integral, crack name=' + str(crack['name']) + ', contours=' + str(crack['contours'])
+                            )
+                            if 'crack tip nodes' in crack.keys():
+                                stps.append(', crack tip nodes')
+                                if crack['symmetry']:
+                                    stps.append(', symm')
+                                stps.append('\n')
+                                if any(isinstance(el, list) for el in crack['crack tip nodes']):
+                                    for cr in crack['crack tip nodes']:
+                                         stps.append(cr[0] + ', ' + cr[1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
+                                else:
+                                    stps.append(crack['crack tip nodes'][0] + ', ' + crack['crack tip nodes'][1] + ', ' + format_arr(np.array(crack['direction']), format_spec=['{:d}'], col_delim=', '))
               
                             
         if k != 'initial-step':       
