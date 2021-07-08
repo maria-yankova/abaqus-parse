@@ -107,7 +107,7 @@ venv.bak/
 .vscode
 
 /demos/save-input-data/*
-
+/demos/save-input-data/!.gitkeep
 # scratch
 scratch.py
 /scratch
