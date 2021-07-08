@@ -55,7 +55,8 @@ setup(
     description="Abaqus input and output file readers and writers.",
     install_requires=[
         'numpy',
-        'fracture-fea-laf',
+        'fracture_fea_laf',
+        'plotly',
     ],
     license="MIT license",
     long_description=get_long_description() + '\n\n' + get_changelog(),
