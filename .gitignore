@@ -108,6 +108,6 @@ venv.bak/
 
 /demos/save-input-data/*
 
+# scratch
 scratch.py
-
 /scratch
