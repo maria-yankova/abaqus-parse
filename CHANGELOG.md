@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.2] - 2021.08.10
+
+### Added
+
+- Add various functions for generating input files for forming limit curve predictions via a grooved-sheet Marciniak-Kuczynski method.
+
 ## [0.1.1] - 2020.12.15
 
 ### Added
