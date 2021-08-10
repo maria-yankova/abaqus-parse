@@ -55,6 +55,7 @@ setup(
     description="Abaqus input and output file readers and writers.",
     install_requires=[
         'numpy',
+        'calfem',
         'fracture_fea_laf==0.1.1',
         'plotly',
     ],

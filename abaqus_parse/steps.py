@@ -10,12 +10,12 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         'initial-step': {
             'bcs': [
                 {
-                'node set': 'load-line',
-                'dof': (1, 1)
+                    'node set': 'load-line',
+                    'dof': (1, 1)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (2, 2)
+                    'node set': 'load-line',
+                    'dof': (2, 2)
                 },
                 {
                     'node set': 'yplane',
@@ -30,15 +30,15 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         'load-step-1': {
             'name': 'Step-1',
             'type': 'Static',
-            'time_increment_definition': time_increment_def, #(0.02, 1.0, 1e-08, 0.02),
-            'bcs':[{
+            'time_increment_definition': time_increment_def,  # (0.02, 1.0, 1e-08, 0.02),
+            'bcs': [{
                 'node set': 'load-line',
                 'dof': (2, 2, applied_displacement)
-            },],
+            }, ],
             'output':
             {
                 'restart frequency': 0,
-                'field':[
+                'field': [
                     {
                         'output type': 'node',
                         'variables': ['COORD', 'U'],
@@ -66,7 +66,7 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
                     ]
                 },
             }
-            
+
         }
     }
 
@@ -74,12 +74,12 @@ def generate_compact_tension_specimen_steps(applied_displacement, number_contour
         print('yes number_layers')
         for i in range(number_layers):
             out['load-step-1']['output']['history']['cracks'][0]['crack tip nodes'].append(
-                    ['crackline'+str(i), 'cracktip'+str(i)]
-                )
+                ['crackline'+str(i), 'cracktip'+str(i)]
+            )
     else:
         out['load-step-1']['output']['history']['cracks'][0]['crack tip nodes'].append(
-                    ['crackline', 'cracktip']
-                )
+            ['crackline', 'cracktip']
+        )
 
     return out
 
@@ -94,7 +94,7 @@ def generate_threepoint_bend_test_steps(applied_displacement, number_contours, t
     )
     out = {
         'initial-step': {
-               # 'interaction properties':[
+            # 'interaction properties':[
             #      {
             #     'type': 'Surface Interaction',
             #     'dof': (1, 1)
@@ -102,28 +102,28 @@ def generate_threepoint_bend_test_steps(applied_displacement, number_contours, t
             # ]
             'bcs': [
                 {
-                'node set': 'load-line',
-                'dof': (1, 1)
+                    'node set': 'load-line',
+                    'dof': (1, 1)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (2, 2)
+                    'node set': 'load-line',
+                    'dof': (2, 2)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (3, 3)
+                    'node set': 'load-line',
+                    'dof': (3, 3)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (4, 4)
+                    'node set': 'load-line',
+                    'dof': (4, 4)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (5, 5)
+                    'node set': 'load-line',
+                    'dof': (5, 5)
                 },
                 {
-                'node set': 'load-line',
-                'dof': (6, 6)
+                    'node set': 'load-line',
+                    'dof': (6, 6)
                 },
                 {
                     'node set': 'yplane',
@@ -142,15 +142,15 @@ def generate_threepoint_bend_test_steps(applied_displacement, number_contours, t
         'load-step-1': {
             'name': 'Step-1',
             'type': 'Static',
-            'time_increment_definition': time_increment_def, #(0.02, 1.0, 1e-08, 0.02),
-            'bcs':[{
+            'time_increment_definition': time_increment_def,  # (0.02, 1.0, 1e-08, 0.02),
+            'bcs': [{
                 'node set': 'load-line',
                 'dof': (1, 1, applied_displacement)
-            },],
+            }, ],
             'output':
             {
                 'restart frequency': 0,
-                'field':[
+                'field': [
                     {
                         'output type': 'node',
                         'variables': ['COORD', 'U'],
@@ -178,19 +178,19 @@ def generate_threepoint_bend_test_steps(applied_displacement, number_contours, t
                     ]
                 },
             }
-            
+
         }
     }
 
     if number_layers:
-        
+
         for i in range(number_layers):
             out['load-step-1']['output']['history']['cracks'][0]['crack tip nodes'].append(
-                    ['crackline'+str(i), 'cracktip'+str(i)]
-                )
+                ['crackline'+str(i), 'cracktip'+str(i)]
+            )
     else:
         out['load-step-1']['output']['history']['cracks'][0]['crack tip nodes'].append(
-                    ['crackline', 'cracktip']
-                )
+            ['crackline', 'cracktip']
+        )
 
     return out

@@ -1,6 +1,9 @@
 import numpy as np
+
+
 def flatten_list(a):
     return [item for sublist in a for item in sublist]
+
 
 def format_args_check(**kwargs):
     """
@@ -32,6 +35,7 @@ def format_args_check(**kwargs):
 
         if not isinstance(kwargs['assign'], str):
             raise ValueError('`assign` must be a string.')
+
 
 def format_arr(arr, depth=0, indent='\t', col_delim='\t', row_delim='\n',
                dim_delim='\n', format_spec='{}'):
@@ -108,15 +112,15 @@ def format_arr(arr, depth=0, indent='\t', col_delim='\t', row_delim='\n',
 
         for sa_idx, sub_arr in enumerate(arr_list):
             for idx_col, col in enumerate(sub_arr):
-                if idx_col==0 and sa_idx==0 and idx_col==len(sub_arr)-1 and sa_idx==len(arr_list)-1:
+                if idx_col == 0 and sa_idx == 0 and idx_col == len(sub_arr)-1 and sa_idx == len(arr_list)-1:
                     out += '   ' + format_spec[sa_idx].format(col)
-                elif idx_col==len(sub_arr)-1 and sa_idx==len(arr_list)-1:
+                elif idx_col == len(sub_arr)-1 and sa_idx == len(arr_list)-1:
                     out += format_spec[sa_idx].format(col)
-                elif idx_col==0 and sa_idx==0:
+                elif idx_col == 0 and sa_idx == 0:
                     out += '   ' + format_spec[sa_idx].format(col) + col_delim
                 else:
                     out += format_spec[sa_idx].format(col) + col_delim
-     
+
         out += row_delim
 
     else:
@@ -138,12 +142,14 @@ def format_arr(arr, depth=0, indent='\t', col_delim='\t', row_delim='\n',
 
     return out
 
+
 def circle_points(r, n, centre):
     t = np.linspace(0, 2*np.pi, n)
     x = r * np.cos(t) + centre[0]
     y = r * np.sin(t) + centre[1]
 
     return np.c_[x, y]
+
 
 def polar2cart_2D(r, θ):
     """

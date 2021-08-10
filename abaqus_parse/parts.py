@@ -8,8 +8,7 @@ from fracture_fea_laf.mesh import (
 
 
 def generate_compact_tension_specimen_parts(dimension, mesh_definition,
-                     elem_type, size_type, fraction, specimen_material):
-
+                                            elem_type, size_type, fraction, specimen_material):
     """
     Parameters
     -----------
@@ -76,13 +75,12 @@ def generate_bend_bar_specimen_parts(dimension, mesh_definition,
         'ct-specimen': {
             **bend_bar_specimen_mesh(refined_mesh_definition, dimension, size_type, fraction),
             'element_type': elem_type,
-            'sections':[
+            'sections': [
                 {
                     'type': 'Solid',
                     'material': specimen_material,
-                    'elset': 'specimen'    
+                    'elset': 'specimen'
                 },
             ],
         }
     }
-    
