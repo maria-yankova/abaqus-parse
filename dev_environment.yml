@@ -10,3 +10,8 @@ dependencies:
 - wheel
 - sphinx
 - recommonmark
+- scipy
+- pandas
+- plotly
+- matplotlib
+- fracture-fea-laf

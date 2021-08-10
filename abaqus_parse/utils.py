@@ -208,3 +208,11 @@ def order_coplanar_points(points, normal, anticlockwise=True):
         ang_order = ang_order[::-1]
 
     return ang_order
+
+
+def search_keep_order(A, B):
+    sort_idx = A.argsort()
+    out = sort_idx[np.searchsorted(A, B, sorter = sort_idx)]
+    idx_layer_0 = np.nonzero(B[:,None] == A)[1]
+    
+    return idx_layer_0
