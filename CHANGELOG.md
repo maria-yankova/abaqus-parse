@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.3] - 2021.08.10
+
+### Fixed
+
+- Fix dependency `calfem-python`
+
 ## [0.1.2] - 2021.08.10
 
 ### Added
